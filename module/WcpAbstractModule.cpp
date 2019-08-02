@@ -3,7 +3,7 @@
 WcpAbstractModule::WcpAbstractModule(ModuleType type
                                      , std::string name
                                      , std::string version
-                                     , bool context_sensitive
+                                     , ModuleContext context_sensitive
                                      , std::string workdir) :
       _type(type)
     , _name(name)
