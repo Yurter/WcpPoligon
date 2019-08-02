@@ -45,15 +45,16 @@ public:
     const char*         name()      const { return _name.c_str();       }
     const char*         version()   const { return _version.c_str();    }
 
-    const char*         process(const char* input_data);
-
-//    ModuleType          type()      const { return _type; }
-//    std::string         name()      const { return _name; }
-//    std::string         version()   const { return _version; }
+    const char*         process(const char* input_data)
+    {
+        nlohmann::json output_data;
+        process(input_data, output_data);
+        return output_data.dump().c_str();
+    }
 
 protected:
 
-    virtual bool        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0; /* Метод, реализующий целевое назначение модуля */
+    virtual void        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0; /* Метод, реализующий целевое назначение модуля */
 
 protected:
 
