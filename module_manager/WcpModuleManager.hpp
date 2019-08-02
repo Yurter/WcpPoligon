@@ -15,6 +15,7 @@ public:
     ~WcpModuleManager();
 
     StringList          availableModules() const;
+    ModuleList*         loadedModeules();
 
     void                load();
     void                unload();
