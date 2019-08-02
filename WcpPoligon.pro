@@ -6,11 +6,13 @@ CONFIG -= qt
 SOURCES += \
         main.cpp \
         module/WcpAbstractModule.cpp \
-        module/WcpModuleWrapper.cpp
+        module/WcpModuleWrapper.cpp \
+        module_manager/WcpModuleManager.cpp
 
 HEADERS += \
     module/WcpAbstractModule.hpp \
-    module/WcpModuleWrapper.hpp
+    module/WcpModuleWrapper.hpp \
+    module_manager/WcpModuleManager.hpp
 
 #nlohmann::json
 INCLUDEPATH += D:\dev\
