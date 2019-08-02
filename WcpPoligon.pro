@@ -5,7 +5,6 @@ CONFIG -= qt
 
 SOURCES += \
         main.cpp \
-        module/WcpAbstractModule.cpp \
         module/WcpModuleWrapper.cpp \
         module_manager/WcpModuleHandler.cpp \
         module_manager/WcpModuleManager.cpp

@@ -24,18 +24,28 @@ class WcpAbstractModule
 
 public:
 
-    WcpAbstractModule(ModuleType type, std::string name, std::string version, ModuleContext context_sensitive, std::string workdir);
-    virtual ~WcpAbstractModule() = 0;
+    WcpAbstractModule(ModuleType type                   /* Реализуемый тип модуля                                       */
+                      , std::string name                /* Имя модуля в произвольной форме, отображается пользователю   */
+                      , std::string version             /* Версия модуля в формате чисел разделенных точками            */
+                      , ModuleContext context_sensitive /* Требования модуля к индивидуальному контексту                */
+                      , std::string workdir)  :         /* Директория, в которой модуль может найти необходимые файлы   */
+        _type(type)
+      , _name(name)
+      , _version(version)
+      , _context_sensitive(context_sensitive)
+      , _workdir(workdir) { }
 
-    ModuleType          type()      const;
-    std::string         name()      const;
-    std::string         version()   const;
+    virtual ~WcpAbstractModule() = default;
 
-    virtual bool        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0;
+    ModuleType          type()      const { return _type; }
+    std::string         name()      const { return _name; }
+    std::string         version()   const { return _version; }
+
+    virtual bool        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0; /* Метод, реализующий целевое назначение модуля */
 
 protected:
 
-    cv::Mat             decodeBase64Image(std::string encoded_image);
+    cv::Mat             decodeBase64Image(std::string encoded_image);   /* Метод принимает base64 изображение из входного джейсона, возврщает cv::Mat */
 
 private:
 
