@@ -1,7 +1,8 @@
 #pragma once
-
 #include <json.hpp>
 #include <opencv2/core/core.hpp>
+
+#define WCP_DLL_EXPORT __declspec(dllexport)
 
 /* Тип модуля определяет область в которой определено его поведение */
 enum ModuleType {
@@ -19,7 +20,7 @@ enum ModuleContext {
     ContextIndependent  /* Модуль не зависит от контекста (от результатов предыдущих обращений)         */
 };
 
-class WcpAbstractModule
+class WCP_DLL_EXPORT WcpAbstractModule
 {
 
 public:
@@ -35,11 +36,22 @@ public:
       , _context_sensitive(context_sensitive)
       , _workdir(workdir) { }
 
+    WcpAbstractModule(WcpAbstractModule&) = delete;
+    WcpAbstractModule(WcpAbstractModule&&) = delete;
+
     virtual ~WcpAbstractModule() = default;
 
-    ModuleType          type()      const { return _type; }
-    std::string         name()      const { return _name; }
-    std::string         version()   const { return _version; }
+    int                 type()      const { return _type;               }
+    const char*         name()      const { return _name.c_str();       }
+    const char*         version()   const { return _version.c_str();    }
+
+    const char*         process(const char* input_data);
+
+//    ModuleType          type()      const { return _type; }
+//    std::string         name()      const { return _name; }
+//    std::string         version()   const { return _version; }
+
+protected:
 
     virtual bool        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0; /* Метод, реализующий целевое назначение модуля */
 
@@ -56,4 +68,5 @@ private:
     std::string         _workdir;
 
 };
+
 

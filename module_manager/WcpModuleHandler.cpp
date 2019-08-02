@@ -2,7 +2,7 @@
 
 WcpModuleHandler::WcpModuleHandler(HINSTANCE h_instance
                                    , std::string dll_name
-                                   , WcpModuleWrapper* module) :
+                                   , WcpAbstractModule* module) :
     _h_instance(h_instance)
   , _dll_name(dll_name)
   , _module(module)
@@ -20,7 +20,7 @@ std::string WcpModuleHandler::dllName() const
     return _dll_name;
 }
 
-WcpModuleWrapper *WcpModuleHandler::module()
+WcpAbstractModule* WcpModuleHandler::module()
 {
     return _module;
 }

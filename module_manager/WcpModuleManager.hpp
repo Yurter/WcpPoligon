@@ -1,9 +1,10 @@
 #pragma once
 #include "WcpModuleHandler.hpp"
+#include <list>
 
 using ModuleList = std::list<WcpModuleHandler>;
 using StringList = std::list<std::string>;
-using CreateModuleFunc = WcpModuleWrapper*(*)(void);
+using CreateModuleFunc = WcpAbstractModule*(*)(void);
 
 class WcpModuleManager
 {

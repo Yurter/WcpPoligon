@@ -1,5 +1,5 @@
 #pragma once
-#include "../module/WcpModuleWrapper.hpp"
+#include "../module/WcpAbstractModule.hpp"
 #include <Windows.h>
 
 class WcpModuleHandler
@@ -7,17 +7,17 @@ class WcpModuleHandler
 
 public:
 
-    WcpModuleHandler(HINSTANCE h_instance, std::string dll_name, WcpModuleWrapper* module);
+    WcpModuleHandler(HINSTANCE h_instance, std::string dll_name, WcpAbstractModule* module);
 
     HINSTANCE           hInstance() const;
     std::string         dllName() const;
-    WcpModuleWrapper*   module();
+    WcpAbstractModule*  module();
 
 private:
 
     HINSTANCE           _h_instance;
     std::string         _dll_name;
-    WcpModuleWrapper*   _module;
+    WcpAbstractModule*  _module;
 
 };
 
