@@ -20,7 +20,7 @@ StringList WcpModuleManager::availableModules() const
     return getFileNameList(_module_path, "dll");
 }
 
-ModuleList* WcpModuleManager::loadedModeules() const
+ModuleList* WcpModuleManager::loadedModeules()
 {
     return &_module_list;
 }
