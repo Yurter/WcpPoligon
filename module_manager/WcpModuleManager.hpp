@@ -1,14 +1,17 @@
 #pragma once
-#include "module/WcpModuleWrapper.hpp"
+#include "WcpModuleHandler.hpp"
+#include <Windows.h>
 
-using ModuleList = std::list<WcpModuleWrapper*>;
+using ModuleList = std::list<WcpModuleHandler>;
+using StringList = std::list<std::string>;
+using CreateModuleFunc = WcpModuleWrapper*(*)(void);
 
 class WcpModuleManager
 {
 
 public:
 
-    WcpModuleManager(std::string mudule_path);
+    WcpModuleManager(std::string module_path);
     ~WcpModuleManager();
 
     void                load();
@@ -16,7 +19,11 @@ public:
 
 private:
 
-    std::string         _mudule_path;
+    StringList          getDllNameList();
+
+private:
+
+    std::string         _module_path;
     ModuleList          _module_list;
 
 };
