@@ -1,6 +1,5 @@
 #pragma once
 #include "WcpModuleHandler.hpp"
-#include <Windows.h>
 
 using ModuleList = std::list<WcpModuleHandler>;
 using StringList = std::list<std::string>;

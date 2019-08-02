@@ -19,14 +19,14 @@ void WcpModuleManager::load()
     for (auto&& dll_name : getDllNameList()) {
         /* Попытка загрузить dll */
         std::wstring wstr(dll_name.begin(), dll_name.end());
-        HINSTANCE h_module = ::LoadLibrary(wstr.c_str());
-        if (h_module == nullptr) {
+        HINSTANCE h_instance = ::LoadLibrary(wstr.c_str());
+        if (h_instance == nullptr) {
             std::string err_msg = "Failed to load library: " + dll_name;
             throw std::exception(err_msg.c_str());
         }
 
         /* Попытка получить указатель на функцию создания модуля */
-        CreateModuleFunc create_func = CreateModuleFunc(::GetProcAddress(HMODULE(h_module), "createModule"));
+        CreateModuleFunc create_func = CreateModuleFunc(::GetProcAddress(HMODULE(h_instance), "createModule"));
         if (create_func == nullptr) {
             std::string err_msg = "Failed to get a create_func: " + dll_name;
             throw std::exception(err_msg.c_str());
@@ -40,7 +40,7 @@ void WcpModuleManager::load()
         }
 
         /* Добавление модуля и его хендлера в список */
-        _module_list.push_back({ h_module, module });
+        _module_list.push_back({ h_instance, dll_name, module });
 
         /* Лог */
         std::cout << "Loaded: " << dll_name << std::endl;
@@ -49,15 +49,15 @@ void WcpModuleManager::load()
 
 void WcpModuleManager::unload()
 {
-    for (auto&& module : _module_list) {
-        std::string module_name = module.second->name();
-        ::FreeLibrary(module.first);
+    for (auto&& module_handler : _module_list) {
+        ::FreeLibrary(module_handler.hInstance());
         /* Лог */
-        std::cout << "Unloaded: " << module.second->name() << std::endl;
+        std::cout << "Unloaded: " << module_handler.dllName() << std::endl;
     }
+    _module_list.clear();
 }
 
 StringList WcpModuleManager::getDllNameList()
 {
-    //
+    return StringList();
 }
