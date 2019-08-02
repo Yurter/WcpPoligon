@@ -1,5 +1,6 @@
 #include "WcpModuleManager.hpp"
 #include <iostream>
+#include <filesystem>
 
 WcpModuleManager::WcpModuleManager(std::string module_path) :
     _module_path(module_path)
@@ -14,9 +15,14 @@ WcpModuleManager::~WcpModuleManager()
     }
 }
 
+StringList WcpModuleManager::availableModules() const
+{
+    return getFileNameList(_module_path, "dll");
+}
+
 void WcpModuleManager::load()
 {
-    for (auto&& dll_name : getDllNameList()) {
+    for (auto&& dll_name : getFileNameList(_module_path, "dll")) {
         /* Попытка загрузить dll */
         std::wstring wstr(dll_name.begin(), dll_name.end());
         HINSTANCE h_instance = ::LoadLibrary(wstr.c_str());
@@ -57,7 +63,23 @@ void WcpModuleManager::unload()
     _module_list.clear();
 }
 
-StringList WcpModuleManager::getDllNameList()
+StringList WcpModuleManager::getFileNameList(std::string path, std::string extention) const
 {
-    return StringList();
+    StringList dll_list;
+
+    try {
+        /* Поиск файлов с указанным расширением в указанной директории */
+        namespace fs = std::filesystem;
+        for (const auto& entry : fs::directory_iterator(path)) {
+            std::string str_path = entry.path().string();
+            if (str_path.find("." + extention) != std::string::npos) {
+                dll_list.push_back(str_path);
+            }
+        }
+    } catch (std::exception e) { /* Указанной дирректории не существует */
+        std::cout << "Exception! " << e.what() << std::endl;
+        return StringList();
+    }
+
+    return dll_list;
 }

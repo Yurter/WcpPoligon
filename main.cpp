@@ -1,6 +1,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
+#include "module_manager/WcpModuleManager.hpp"
 
 #define WEB_CAMERA 0
 
@@ -10,6 +11,11 @@ int main()
     cv::VideoCapture source;
     source.open(WEB_CAMERA);
     cv::Mat source_image;
+
+    WcpModuleManager module_maneger("D:\\dev\\WcpPoligon\\plugins");
+    for (auto&& module : module_maneger.availableModules()) {
+        std::cout << "available module: " << module << std::endl;
+    }
 
     { /* Основной цикл */
         while (cv::waitKey(5) != 'q') {

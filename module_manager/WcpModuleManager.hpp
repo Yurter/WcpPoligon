@@ -13,12 +13,14 @@ public:
     WcpModuleManager(std::string module_path);
     ~WcpModuleManager();
 
+    StringList          availableModules() const;
+
     void                load();
     void                unload();
 
 private:
 
-    StringList          getDllNameList();
+    StringList          getFileNameList(std::string path, std::string extention) const;
 
 private:
 
