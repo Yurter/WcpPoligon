@@ -2,6 +2,7 @@
 #include "../module/WcpAbstractModule.hpp"
 #include <Windows.h>
 
+/* Класс-обертка вокруг абстрактнго модуля и dll, из которой он был загружен */
 class WcpModuleHandler
 {
 

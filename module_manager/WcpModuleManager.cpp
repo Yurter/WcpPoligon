@@ -10,7 +10,7 @@ WcpModuleManager::WcpModuleManager(std::string module_path) :
 
 WcpModuleManager::~WcpModuleManager()
 {
-    if (!_module_list.empty()) {
+    if (!_handler_list.empty()) {
         unload();
     }
 }
@@ -20,9 +20,9 @@ StringList WcpModuleManager::availableModules() const
     return getFileNameList(_module_path, "dll");
 }
 
-ModuleList* WcpModuleManager::loadedModeules()
+HandlerList* WcpModuleManager::handlerList()
 {
-    return &_module_list;
+    return &_handler_list;
 }
 
 void WcpModuleManager::load()
@@ -51,22 +51,22 @@ void WcpModuleManager::load()
         }
 
         /* Добавление модуля и его хендлера в список */
-        _module_list.push_back({ h_instance, dll_name, module });
+        _handler_list.push_back({ h_instance, dll_name, module });
 
         /* Лог */
         std::cout << "Loaded: " << dll_name << std::endl;
-        module->process("Hello module!");
+        module->process("Hello, module!");
     }
 }
 
 void WcpModuleManager::unload()
 {
-    for (auto&& module_handler : _module_list) {
+    for (auto&& module_handler : _handler_list) {
         ::FreeLibrary(module_handler.hInstance());
         /* Лог */
         std::cout << "Unloaded: " << module_handler.dllName() << std::endl;
     }
-    _module_list.clear();
+    _handler_list.clear();
 }
 
 StringList WcpModuleManager::getFileNameList(std::string path, std::string extention) const

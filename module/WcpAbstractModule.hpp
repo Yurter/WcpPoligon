@@ -46,6 +46,7 @@ public:
     const char*         name()      const { return _name.c_str();       }
     const char*         version()   const { return _version.c_str();    }
 
+    /* Си интерфейс для метода process(const nlohmann::json input_data, nlohmann::json& output_data) : void */
     const char*         process(const char* input_data)
     {
         nlohmann::json output_data;

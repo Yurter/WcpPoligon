@@ -2,10 +2,11 @@
 #include "WcpModuleHandler.hpp"
 #include <list>
 
-using ModuleList = std::list<WcpModuleHandler>;
+using HandlerList = std::list<WcpModuleHandler>;
 using StringList = std::list<std::string>;
 using CreateModuleFunc = WcpAbstractModule*(*)(void);
 
+/* Класс загружает и выгружает модули из dll файлов в указанной директории */
 class WcpModuleManager
 {
 
@@ -15,7 +16,7 @@ public:
     ~WcpModuleManager();
 
     StringList          availableModules() const;
-    ModuleList*         loadedModeules();
+    HandlerList*        handlerList();
 
     void                load();
     void                unload();
@@ -27,6 +28,6 @@ private:
 private:
 
     std::string         _module_path;
-    ModuleList          _module_list;
+    HandlerList         _handler_list;
 
 };
