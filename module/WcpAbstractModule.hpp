@@ -56,10 +56,13 @@ public:
 protected:
 
     /* Метод, реализующий целевое назначение модуля */
-    virtual void        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0;
+    virtual void process(const nlohmann::json input_data, nlohmann::json& output_data) = 0;
+
+    /* Метод принимает cv::Mat изображение, возврщает base64 */
+    std::string encodeBase64Image(cv::Mat cvimg);
 
     /* Метод принимает base64 изображение из входного джейсона, возврщает cv::Mat */
-    cv::Mat             decodeBase64Image(std::string encoded_image)
+    cv::Mat decodeBase64Image(std::string encoded_image)
     {
         size_t in_len = encoded_image.size();
         int i = 0;
@@ -103,6 +106,11 @@ protected:
         std::vector<uchar> data(decoded_string.begin(), decoded_string.end());
         cv::Mat cvimg = imdecode(data, cv::IMREAD_UNCHANGED);
         return cvimg;
+    }
+
+    bool keyExist(const nlohmann::json& js, std::string key)
+    {
+        return js.find(key) != js.end();
     }
 
 private:
