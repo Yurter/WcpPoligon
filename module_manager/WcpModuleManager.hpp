@@ -30,4 +30,3 @@ private:
     ModuleList          _module_list;
 
 };
-

@@ -20,4 +20,3 @@ private:
     WcpAbstractModule*  _module;
 
 };
-
