@@ -4,7 +4,6 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        module/WcpModuleUtils.cpp \
         module_controller/WcpModuleController.cpp \
         main.cpp \
         module_manager/WcpModuleHandler.cpp \

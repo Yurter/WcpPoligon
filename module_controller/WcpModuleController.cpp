@@ -1,5 +1,6 @@
 #include "WcpModuleController.hpp"
 #include "../module/WcpModuleUtils.hpp"
+#include <iostream>
 
 void WcpModuleController::add(WcpAbstractModule* module)
 {
@@ -21,6 +22,7 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
     for (auto&& module : _module_list) {
         auto ret = module->process(input_data.dump().c_str());
         auto module_answer = nlohmann::json::parse(ret);
+        std::cout << "[Debug] module_answer = " << module_answer << std::endl;
         output_json.push_back({ module->name(), module_answer });
     }
     return output_json;
