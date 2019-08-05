@@ -1,8 +1,14 @@
 #include "WcpModuleController.hpp"
+#include "../module/WcpModuleUtils.hpp"
 
 void WcpModuleController::add(WcpAbstractModule* module)
 {
     _module_list.push_back(module);
+}
+
+bool WcpModuleController::initGraph()
+{
+    return true;
 }
 
 nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
@@ -11,7 +17,7 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
     //temp solution
     nlohmann::json input_data;
     input_data["action"] = "detect";
-    input_data["image"] = WcpAbstractModule::encodeBase64Image(image);
+    input_data["image"] = WcpModuleUtils::encodeBase64Image(image);
     for (auto&& module : _module_list) {
         auto ret = module->process(input_data.dump().c_str());
         auto module_answer = nlohmann::json::parse(ret);

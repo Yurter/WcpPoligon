@@ -10,8 +10,8 @@ class WcpModuleController
 
 public:
 
-    WcpModuleController();
-    ~WcpModuleController();
+    WcpModuleController() = default;
+    ~WcpModuleController() = default;
 
     /* Метод добавляет модуль в кучу перед инициализацией графа */
     void                add(WcpAbstractModule* module);
