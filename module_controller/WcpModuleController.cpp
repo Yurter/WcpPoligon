@@ -34,30 +34,6 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
 //                                      , { "data", WcpModuleUtils::encodeBase64Image(image)
 //                                      }
 //                                  });
-    input_data["image"]["width"] = image.cols;
-    input_data["image"]["height"] = image.rows;
-//    input_data["image"]["data"] = WcpModuleUtils::encodeBase64Image(image);
-//    input_data["image"]["data"] = std::vector<uchar>(image.data, image.data + image.cols * image.rows);
-    input_data["image"]["type"] = image.type();
-
-
-    std::vector<uchar> array;
-//    if (image.isContinuous()) {
-//      array.assign(image.data, image.data + image.total());
-//    } else {
-//      for (int i = 0; i < image.rows; ++i) {
-//        array.insert(array.end(), image.ptr<uchar>(i), image.ptr<uchar>(i)+image.cols);
-//      }
-//    }
-
-    array.reserve(image.total());
-    for (size_t i = 0; i < image.total(); i++) {
-        array.push_back(image.data[i]);
-    }
-
-    input_data["image"]["data"] = array;
-
-    std::vector<char>vec (image.begin<char>(), image.end<char>());
 
     std::vector<uchar> array2;
     if (image.isContinuous()) {
@@ -68,7 +44,17 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
       }
     }
 
+    input_data["image"]["width"] = image.cols;
+    input_data["image"]["height"] = image.rows;
+//    input_data["image"]["data"] = WcpModuleUtils::encodeBase64Image(image);
+//    input_data["image"]["data"] = std::vector<uchar>(image.data, image.data + image.cols * image.rows);
+    input_data["image"]["type"] = image.type();
     input_data["image"]["data"] = array2;
+
+
+
+
+
 
     std::vector<uchar> test_arr = input_data["image"]["data"];
 
@@ -78,7 +64,7 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
             , input_data["image"]["type"] //CV_8U
             , test_arr.data());
     cv::imwrite("Debug2.png", source_cvimg);
-    return 0;
+//    return 0;
 
 
     std::cout << "[Debug] std::vector<uchar>(image.data, image.data + image.cols * image.rows) = " << std::vector<uchar>(image.data, image.data + image.cols * image.rows).size() << std::endl;
