@@ -55,7 +55,7 @@ void WcpModuleManager::load()
 
         /* Лог */
         std::cout << "Loaded: " << dll_name << std::endl;
-        module->process("Hello, module!");
+//        module->process("Hello, module!");
     }
 }
 

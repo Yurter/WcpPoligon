@@ -51,7 +51,7 @@ public:
     [[nodiscard]] const char* process(const char* input_data)
     {
         nlohmann::json output_data;
-        process(input_data, output_data);
+        process(nlohmann::json::parse(input_data), output_data);
         return output_data.dump().c_str();
     }
 

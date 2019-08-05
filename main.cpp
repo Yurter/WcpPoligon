@@ -39,6 +39,7 @@ int main()
             source >> source_image;
 
             auto result = module_controller.propagateImage(source_image);
+            break;
 
             /* Увеличение картинки в два раза */
             resize(source_image, source_image, cv::Size(0,0), 2, 2, cv::INTER_CUBIC);

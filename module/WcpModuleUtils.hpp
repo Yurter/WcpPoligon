@@ -2,6 +2,7 @@
 #include <json.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <iostream>
 
 static const std::string base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -62,8 +63,9 @@ public:
     }
 
     /* Метод принимает base64 изображение из входного джейсона, возврщает cv::Mat */
-    static cv::Mat decodeBase64Image(std::string encoded_image)
+    static cv::Mat decodeBase64Image(std::string encoded_image, int width, int height)
     {
+        std::cout << "decodeBase64Image - " <<  width << " " << height << std::endl;
         size_t in_len = encoded_image.size();
         int i = 0;
         int j = 0;
@@ -73,8 +75,8 @@ public:
 
         auto isBase64 = [](unsigned char c) { return (isalnum(c) || (c == '+') || (c == '/')); };
 
-        while (in_len-- && (encoded_image[in_] != '=') && isBase64(encoded_image[in_])) {
-            char_array_4[i++] = encoded_image[in_]; in_++;
+        while (in_len-- && (uchar)(encoded_image[in_] != '=') && isBase64((uchar)encoded_image[in_])) {
+            char_array_4[i++] = (uchar)encoded_image[in_]; in_++;
             if (i == 4) {
                 for (i = 0; i < 4; i++)
                     char_array_4[i] = base64_chars.find(char_array_4[i]);
@@ -103,8 +105,13 @@ public:
             for (j = 0; (j < i - 1); j++) decoded_string += char_array_3[j];
         }
 
+//        std::cout << "decoded_string - " << decoded_string << std::endl;
         std::vector<uchar> data(decoded_string.begin(), decoded_string.end());
         cv::Mat cvimg = imdecode(data, cv::IMREAD_UNCHANGED);
+//        std::cout << "vector<ucgar> to mat: " << data.size() << std::endl;
+//        cv::Mat cvimg(width, height, 16/*CV_8UC1*/, data.data());
+//        std::cout << "\n\n\n\n\ncvimg - " << cvimg.cols * cvimg.rows << std::endl;
+        std::cout << "[DebugM] image size = " << cvimg.cols << "x"<< cvimg.rows << "=" << cvimg.cols * cvimg.rows << std::endl;
         return cvimg;
     }
 
