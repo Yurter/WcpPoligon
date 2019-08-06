@@ -2,6 +2,7 @@
 #include <json.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include "WcpModuleUtils.hpp"
 
 #define WCP_DLL_EXPORT __declspec(dllexport)
 
@@ -42,7 +43,10 @@ public:
       , _workdir(workdir)
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
-    { }
+//    { }
+    {
+        std::cout << __FUNCTION__ << std::endl;
+    }
 
     WcpAbstractModule(WcpAbstractModule&) = delete;
     WcpAbstractModule(WcpAbstractModule&&) = delete;

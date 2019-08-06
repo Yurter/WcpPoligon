@@ -35,6 +35,8 @@ nlohmann::json WcpModuleController::recursion(nlohmann::json input_data)
     for (auto it = input_data.begin(); it != input_data.end(); ++it) {
         for (auto&& module : _module_list) {
             /* Если во входном джейсоне есть поле, которое может обработать один из модулей */
+            std::cout << std::endl << "it.key() = " << it.key() << std::endl;
+            std::cout << "imodule->explicitDependence() = " << module->explicitDependence() << std::endl;
             if (it.key() == std::string(module->explicitDependence())) {
 
                 /* 1 - Обработка поля модулем */

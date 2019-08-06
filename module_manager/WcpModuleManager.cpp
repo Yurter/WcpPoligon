@@ -55,9 +55,46 @@ void WcpModuleManager::load()
 
         /* Лог */
         std::cout << "Loaded: " << dll_name << std::endl;
-//        module->process("Hello, module!");
     }
 }
+
+//void WcpModuleManager::load()
+//{
+//    for (auto&& dll_name : getFileNameList(_module_path, "dll")) {
+//        /* Попытка загрузить dll */
+//        std::wstring wstr(dll_name.begin(), dll_name.end());
+//        HINSTANCE h_instance = ::LoadLibrary(wstr.c_str());
+//        if (h_instance == nullptr) {
+//            std::string err_msg = "Failed to load library: " + dll_name;
+//            throw std::exception(err_msg.c_str());
+//        }
+//        std::cout << "--1\n";
+
+//        /* Попытка получить указатель на функцию создания модуля */
+//        CreateModuleFunc create_func = CreateModuleFunc(::GetProcAddress(HMODULE(h_instance), "createModule"));
+//        if (create_func == nullptr) {
+//            std::string err_msg = "Failed to get a create_func: " + dll_name;
+//            throw std::exception(err_msg.c_str());
+//        }
+//        std::cout << "--2\n";
+
+//        /* Попытка создать объект модуля */
+//        auto module = create_func();
+//        std::cout << "--3\n";
+//        if (module == nullptr) {
+//            std::string err_msg = "Failed to creat module: " + dll_name;
+//            throw std::exception(err_msg.c_str());
+//        }
+//        std::cout << "--4\n";
+
+//        /* Добавление модуля и его хендлера в список */
+//        _handler_list.push_back({ h_instance, dll_name, module });
+
+//        /* Лог */
+//        std::cout << "Loaded: " << dll_name << std::endl;
+////        module->process("Hello, module!");
+//    }
+//}
 
 void WcpModuleManager::unload()
 {
