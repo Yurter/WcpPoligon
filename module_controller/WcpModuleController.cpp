@@ -9,33 +9,56 @@ void WcpModuleController::add(WcpAbstractModule* module)
 
 bool WcpModuleController::initGraph()
 {
+    for (auto&& module : _module_list) {
+        //
+    }
     return true;
 }
 
 nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
 {
-    std::cout << __FUNCTION__ << std::endl;
-    nlohmann::json output_json;
-    //temp solution
     nlohmann::json input_data;
 
-    try {
+//    input_data["source_image"] = WcpModuleUtils::imageToJson(image);
+    input_data["source_image"] = { "image", WcpModuleUtils::imageToJson(image) };
 
-        input_data["action"] = "detect";
-        input_data["image"] = WcpModuleUtils::imageToJson(image);
+    nlohmann::json output_json = recursion(input_data);
 
+    return output_json;
+}
+
+nlohmann::json WcpModuleController::recursion(nlohmann::json input_data)
+{
+    nlohmann::json output_json;
+
+    /* Итерация по ключам полей входного джейсона */
+    for (auto it = input_data.begin(); it != input_data.end(); ++it) {
         for (auto&& module : _module_list) {
-            auto ret = module->process(input_data.dump().c_str());
-            auto module_answer = nlohmann::json::parse(ret);
-            std::cout << "[Debug] " << module->name() << "module_answer = " << module_answer << std::endl;
-            output_json.push_back({ module->name(), module_answer });
+            /* Если во входном джейсоне есть поле, которое может обработать один из модулей */
+            if (it.key() == std::string(module->explicitDependence())) {
+
+                /* 1 - Обработка поля модулем */
+                nlohmann::json js_process = {
+                    { "action", "process" }
+                    , *it
+                };
+
+                auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
+
+                if (module_answer["status"] == "success") {
+                    output_json.push_back(module_answer);
+
+                    /* 2 - Обработка ответа модуля подмодулями */
+                    auto sub_module_answer = recursion(module_answer);
+
+                    if (sub_module_answer["status"] == "success") {
+                        output_json.push_back(sub_module_answer);
+                    }
+
+                }
+            }
         }
-
-        return output_json;
-
-    } catch (std::exception e) {
-        std::cout << "std::exception: " << e.what() << std::endl;
     }
 
-    return nlohmann::json();
+    return output_json;
 }

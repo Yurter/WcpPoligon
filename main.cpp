@@ -39,8 +39,12 @@ int main()
             while (cv::waitKey(5) != 'q') {
                 source >> source_image;
 
-                auto result = module_controller.propagateImage(source_image);
-    //            break;
+                static int frame_counter = 0; /* Отладочный пропуск кадров для легкого чтения лога */
+                frame_counter++;
+                if (frame_counter % 40 == 0) {
+                    auto result = module_controller.propagateImage(source_image);
+                    std::cout << result << std::endl;
+                }
 
                 /* Увеличение картинки в два раза */
                 resize(source_image, source_image, cv::Size(0,0), 2, 2, cv::INTER_CUBIC);
