@@ -43,7 +43,6 @@ int main()
                 frame_counter++;
                 if (frame_counter % 40 == 0) {
                     auto result = module_controller.propagateImage(source_image);
-//                    std::cout << result << std::endl;
 
                     std::cout << "===========================================" << std::endl;
                     for (auto&& elem : result) {
