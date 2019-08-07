@@ -44,6 +44,12 @@ int main()
                 if (frame_counter % 40 == 0) {
                     auto result = module_controller.propagateImage(source_image);
 //                    std::cout << result << std::endl;
+
+                    std::cout << "===========================================" << std::endl;
+                    for (auto&& elem : result) {
+                        std::cout << "| " << elem.begin().key() << std::endl;
+                    }
+                    std::cout << "===========================================" << std::endl;
                 }
 
                 /* Увеличение картинки в два раза */

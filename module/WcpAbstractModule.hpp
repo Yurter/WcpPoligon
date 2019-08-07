@@ -43,10 +43,8 @@ public:
       , _workdir(workdir)
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
-//    { }
-    {
-        std::cout << __FUNCTION__ << std::endl;
-    }
+      , _used(false)
+    { }
 
     WcpAbstractModule(WcpAbstractModule&) = delete;
     WcpAbstractModule(WcpAbstractModule&&) = delete;
@@ -58,13 +56,17 @@ public:
     const char*         version()               const { return _version.c_str();                }
     const char*         implicitDependence()    const { return _implicit_dependence.c_str();    }
     const char*         explicitDependence()    const { return _explicit_dependence.c_str();    }
+    bool                used()                  const { return _used;                           }
+
+    void                setUsed(bool used) { _used = used; }
 
     /* Си интерфейс для метода process(const nlohmann::json input_data, nlohmann::json& output_data) : void */
     [[nodiscard]] const char* process(const char* input_data)
     {
         nlohmann::json output_data;
         process(nlohmann::json::parse(input_data), output_data);
-        return output_data.dump().c_str();
+        _json_dump_buffer = output_data.dump();
+        return _json_dump_buffer.c_str();
     }
 
 protected:
@@ -81,5 +83,8 @@ private:
     std::string         _workdir;
     std::string         _implicit_dependence;
     std::string         _explicit_dependence;
+
+    std::string         _json_dump_buffer;
+    bool                _used;
 
 };

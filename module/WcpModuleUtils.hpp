@@ -4,23 +4,18 @@
 #include <opencv2/imgcodecs.hpp>
 #include <iostream>
 
-static const std::string base64_chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz"
-        "0123456789+/";
-
 class WcpModuleUtils
 {
 
 public:
 
-    /* Метод проверяет наличие ключа в переданном джейсоне */
+    /* Метод проверяет наличие ключа (key) в переданном nlohmann::json */
     static bool keyExist(const nlohmann::json& js, std::string key)
     {
         return js.find(key) != js.end();
     }
 
-    /* Метод собирает джейсон из cv картинки */
+    /* Метод собирает nlohmann::json из cv::Mat */
     static nlohmann::json imageToJson(cv::Mat& cvimage)
     {
         nlohmann::json jscvimage;
@@ -28,20 +23,54 @@ public:
         std::vector<uchar> data_array;
         bool ret = cv::imencode(".png", cvimage, data_array);
 
-        jscvimage["width"] = cvimage.cols;
-        jscvimage["height"] = cvimage.rows;
-        jscvimage["type"] = cvimage.type();
-        jscvimage["data"] = data_array;
+        jscvimage["image"]["data"] = data_array;
 
         return jscvimage;
     }
 
-    /* Метод собирает cv картинку из джейсона */
+    /* Метод собирает cv::Mat из nlohmann::json */
     static cv::Mat jsonToImage(const nlohmann::json& jscvimage)
     {
         std::vector<uchar> data = jscvimage["data"];
         cv::Mat cvimage = cv::imdecode(data, 1);
         return cvimage;
+    }
+
+    /* Метод собирает джейсон из cv::Rect */
+    template<typename cvRect>
+    static nlohmann::json rectToJson(cvRect cvrect)
+    {
+        nlohmann::json jsrect;
+
+        jsrect["rect"]["x"] = cvrect.x;
+        jsrect["rect"]["y"] = cvrect.y;
+        jsrect["rect"]["w"] = cvrect.width;
+        jsrect["rect"]["h"] = cvrect.height;
+
+        return jsrect;
+    }
+
+    /* Метод собирает cv::Rect из nlohmann::json */
+    template<typename cvRect>
+    static cvRect jsonToRect(nlohmann::json jsrect)
+    {
+        cvRect cvrect;
+
+        cvrect.x = jsrect["rect"]["x"];
+        cvrect.y = jsrect["rect"]["y"];
+        cvrect.width  = jsrect["rect"]["w"];
+        cvrect.height = jsrect["rect"]["h"];
+
+        return cvrect;
+    }
+
+    /* Метод собирает джейсон из cv::Rect */
+    static nlohmann::json createJsonObject(std::string key, nlohmann::json value)
+    {
+//        return nlohmann::json { key, value };
+        nlohmann::json jsobject;
+        jsobject[key] = value;
+        return jsobject;
     }
 
 };

@@ -22,16 +22,16 @@ public:
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     nlohmann::json      propagateImage(cv::Mat image);
 
-//    nlohmann::json
-
 private:
 
-    nlohmann::json      recursion(nlohmann::json input_data);
+    void                recursion();
 
 
 private:
 
     ModuleList          _module_list;
+
+    nlohmann::json      _data_list;
 
 };
 
