@@ -22,6 +22,9 @@ enum ModuleContext {
     ContextIndependent  /* Модуль не зависит от контекста (от результатов предыдущих обращений)         */
 };
 
+//using saveData = void(*)(nlohmann::json request, nlohmann::json& response);   /* ? */
+//using loadData = void(*)(nlohmann::json request, nlohmann::json& response);   /* ? */
+
 /* Класс описывает виртуальный интерфейс для наследующих его модулей */
 class WCP_DLL_EXPORT WcpAbstractModule
 {
@@ -72,7 +75,10 @@ public:
 protected:
 
     /* Метод, реализующий целевое назначение модуля */
-    virtual void process(const nlohmann::json input_data, nlohmann::json& output_data) = 0;
+    virtual void        process(const nlohmann::json input_data, nlohmann::json& output_data) = 0;
+
+    void                saveData(nlohmann::json data);
+    nlohmann::json      loadData();
 
 private:
 

@@ -18,11 +18,10 @@ public:
     /* Метод собирает nlohmann::json из cv::Mat */
     static nlohmann::json imageToJson(cv::Mat& cvimage)
     {
-        nlohmann::json jscvimage;
-
         std::vector<uchar> data_array;
         bool ret = cv::imencode(".png", cvimage, data_array);
 
+        nlohmann::json jscvimage;
         jscvimage["image"]["data"] = data_array;
 
         return jscvimage;
@@ -67,10 +66,29 @@ public:
     /* Метод собирает джейсон из cv::Rect */
     static nlohmann::json createJsonObject(std::string key, nlohmann::json value)
     {
-//        return nlohmann::json { key, value };
         nlohmann::json jsobject;
         jsobject[key] = value;
         return jsobject;
     }
+
+    /* ? */
+//    static nlohmann::json dosmth()
+//    {
+//        //
+//    }
+
+    /* ? */
+//    static nlohmann::json concatJsonObjects(nlohmann::json json_list)
+//    {
+//        std::cout << "json_list = " << json_list << std::endl;
+//        nlohmann::json jsresult;// = nlohmann::json().flatten();
+//        for (auto&& elem : json_list) {
+//            std::cout << "elem = " << elem << std::endl;
+//            for (auto it = elem.begin(); it != elem.end(); ++it) {
+//                jsresult[it.key()] = it.value();
+//            }
+//        }
+//        return jsresult;
+//    }
 
 };

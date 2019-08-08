@@ -7,14 +7,6 @@ void WcpModuleController::add(WcpAbstractModule* module)
     _module_list.push_back(module);
 }
 
-bool WcpModuleController::initGraph()
-{
-    for (auto&& module : _module_list) {
-        //
-    }
-    return true;
-}
-
 //    _data_list.push_back(WcpModuleUtils::createJsonObject(
 //                             "source_image"
 //                             , WcpModuleUtils::imageToJson(image))
@@ -25,7 +17,6 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
     std::cout << "-----------------------" << __FUNCTION__ << std::endl;
     nlohmann::json source_array;
     source_array["source_image"].push_back(WcpModuleUtils::imageToJson(image));
-
 
 
     _data_list.push_back(source_array);
@@ -69,11 +60,13 @@ void WcpModuleController::recursion()
     std::cout << "--------" << __FUNCTION__ << " " << _data_list.size() << std::endl;
     /* Итерация по ключам полей входного джейсона */
     for (auto&& data : _data_list) {
+        std::cout << "data.type_name() = " << data.type_name() << std::endl;
+
         auto jsfield = data.begin(); /* Элемент массива как json для обращения к ключу и значению */
 //        std::cout << "jsfield = " << *jsfield << std::endl;
         try {
             std::cout << "jsfield.key() = " << jsfield.key() << std::endl;
-            std::cout << "NORm = " << *jsfield << std::endl;
+//            std::cout << "NORm = " << *jsfield << std::endl;
         } catch (...) {
             std::cout << "ERROR = " << *jsfield << std::endl;
         }

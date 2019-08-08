@@ -29,10 +29,6 @@ int main()
     for (auto&& module_handler : *module_maneger.handlerList()) {
         module_controller.add(module_handler.module());
     }
-    if (!module_controller.initGraph()) {
-        std::cout << "Failed to init module controller' graph" << std::endl;
-        return -1;
-    }
 
     try {
         { /* Основной цикл */
