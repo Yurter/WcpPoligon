@@ -22,12 +22,11 @@ enum ModuleContext {
     ContextIndependent  /* Модуль не зависит от контекста (от результатов предыдущих обращений)         */
 };
 
-//using saveData = void(*)(nlohmann::json request, nlohmann::json& response);   /* ? */
-//using loadData = void(*)(nlohmann::json request, nlohmann::json& response);   /* ? */
-
-using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);   /* ? */
+/* Callback-функция для выполнения запросов из модуля */
+using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
 
 #define throw_exception(msg) throw std::exception(std::string(_name + " : " + std::string(msg)).c_str())
+#define UNUSED(x) (void)x;
 
 /* Класс описывает виртуальный интерфейс для наследующих его модулей */
 class /*WCP_DLL_EXPORT*/ WcpAbstractModule
@@ -38,7 +37,6 @@ public:
     WcpAbstractModule(ModuleType type                   /* Реализуемый тип модуля                                       */
                       , std::string name                /* Имя модуля в произвольной форме, отображается пользователю   */
                       , std::string version             /* Версия модуля в формате чисел разделенных точками            */
-                      , ModuleContext context_sensitive /* Требования модуля к индивидуальному контексту                */
                       , std::string workdir             /* Директория, в которой модуль может найти необходимые файлы   */
                       , std::string implicit_dependence /* Директория, в которой модуль может найти необходимые файлы   */
                       , std::string explicit_dependence /* Директория, в которой модуль может найти необходимые файлы   */
@@ -46,7 +44,6 @@ public:
         _type(type)
       , _name(name)
       , _version(version)
-      , _context_sensitive(context_sensitive)
       , _workdir(workdir)
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
@@ -158,6 +155,7 @@ protected:
     virtual bool onProcess(const nlohmann::json input_data_array, nlohmann::json& output_data_array) = 0;
     virtual bool onAction(const std::string action, const nlohmann::json input_data_array, nlohmann::json& output_data_array)
     {
+        UNUSED(action) UNUSED(input_data_array) UNUSED(output_data_array)
         throw_exception(action + " action called, but virtual function \"onAction\" not overrided");
     }
 
@@ -191,7 +189,6 @@ private:
     ModuleType          _type;
     std::string         _name;
     std::string         _version;
-    ModuleContext       _context_sensitive;
     std::string         _workdir;
     std::string         _implicit_dependence;
     std::string         _explicit_dependence;
