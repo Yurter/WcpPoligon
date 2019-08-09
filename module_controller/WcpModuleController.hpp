@@ -19,6 +19,9 @@ public:
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     nlohmann::json      propagateImage(cv::Mat image);
 
+    /* Метод устанавливает всем модулям сallback-функцию */
+    void                setCallbackFunc(CallbackFunc callback_func);
+
 private:
 
     void                recursion();

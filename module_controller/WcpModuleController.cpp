@@ -25,6 +25,20 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
     return output_json;
 }
 
+void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
+{
+    nlohmann::json js_set_callback;
+    js_set_callback["action"] = "set_callback";
+    js_set_callback["callback_func"] = reinterpret_cast<int64_t>(callback_func);
+    for (auto&& module : _module_list) {
+       auto module_answer = nlohmann::json::parse(module->process(js_set_callback.dump().c_str()));
+       if (module_answer["status"] == "failed") {
+           std::string err_msg = "Failed to callback_func to module: " + std::string(module->name());
+           throw std::exception(err_msg.c_str());
+       }
+    }
+}
+
 void WcpModuleController::recursion()
 {
     /* Итерация по ключам полей входного джейсона */
