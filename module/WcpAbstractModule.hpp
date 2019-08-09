@@ -193,6 +193,10 @@ protected:
     void stashObject(std::string obj_name, nlohmann::json jsobj_value) {
         /* Формирование json-объекта, поля котрого содержат массивы однотипных объектов */
         _stashed_objects[obj_name].push_back(jsobj_value);
+        /* Запсись полученного объекта в базу данных */
+        nlohmann::json resulting_object;
+        resulting_object[obj_name] = jsobj_value;
+        saveResultingObject(resulting_object);
     }
 
     /* Метод вызывается внутри реализации onProcess при завршении обработки входных данных и формировании ответа */
@@ -242,6 +246,18 @@ private:
         nlohmann::json response;
         request["module"] = _workname;
         request["action"] = "register";
+        _callback_func(request, response);
+    }
+
+    void saveResultingObject(nlohmann::json jsobject) {
+        if (_callback_func == nullptr) {
+            throw_exception("Callback function is null");
+        }
+        nlohmann::json request;
+        nlohmann::json response;
+        request["module"] = _workname;
+        request["action"] = "save_result";
+        request["object"] = jsobject;
         _callback_func(request, response);
     }
 
