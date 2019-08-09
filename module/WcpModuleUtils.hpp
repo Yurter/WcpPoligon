@@ -19,7 +19,10 @@ public:
     static nlohmann::json imageToJson(cv::Mat& cvimage)
     {
         std::vector<uchar> data_array;
-        bool ret = cv::imencode(".png", cvimage, data_array);
+
+        if (cv::imencode(".png", cvimage, data_array) == false) {
+            throw std::exception("imageToJson failed");
+        }
 
         nlohmann::json jscvimage;
         jscvimage["image"]["data"] = data_array;
@@ -70,25 +73,5 @@ public:
         jsobject[key] = value;
         return jsobject;
     }
-
-    /* ? */
-//    static nlohmann::json dosmth()
-//    {
-//        //
-//    }
-
-    /* ? */
-//    static nlohmann::json concatJsonObjects(nlohmann::json json_list)
-//    {
-//        std::cout << "json_list = " << json_list << std::endl;
-//        nlohmann::json jsresult;// = nlohmann::json().flatten();
-//        for (auto&& elem : json_list) {
-//            std::cout << "elem = " << elem << std::endl;
-//            for (auto it = elem.begin(); it != elem.end(); ++it) {
-//                jsresult[it.key()] = it.value();
-//            }
-//        }
-//        return jsresult;
-//    }
 
 };

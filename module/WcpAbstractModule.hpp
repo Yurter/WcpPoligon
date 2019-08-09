@@ -30,11 +30,13 @@ public:
 
     WcpAbstractModule(ModuleType type                   /* Реализуемый тип модуля                                       */
                       , std::string name                /* Имя модуля в произвольной форме, отображается пользователю   */
-                      , std::string workname            /* Имя модуля в уникальной, лаконичной, неизменной от версии к
-                                                         * версии форме, используется в качестве метки при хранении
-                                                         * данных модуля во внешнем постоянном хранилище, совпадает с
-                                                         * именем индивидуальной для кажого модуля директорей, в которой
-                                                         * находятся dll файл и необходимые для работы файлы            */
+                      , std::string workname            /* Имя модуля в уникальной, лаконичной, неизменной от версии к  *
+                                                         * версии форме, используется в качестве:                       *
+                                                         * 1. метки при хранении данных модуля во внешнем постоянном    *
+                                                         * хранилище;                                                   *
+                                                         * 2. имени индивидуальной для кажого модуля директорей, в      *
+                                                         * которой находятся dll файл и необходимые для работы файлы    *
+                                                         * 3. имени контроллера для сетевого взаимодейтсвия             */
                       , std::string version             /* Версия модуля в формате чисел разделенных точками            */
                       , std::string explicit_dependence /* Имя желаемого объекта, который модуль может обработать       */
                       , std::string implicit_dependence /* Имя допустимого объекта, который модуль может обработать     */
@@ -129,8 +131,11 @@ protected:
             if (input_data["callback_func"].is_number() == false) {
                 throw_exception("value of \"callback_func\" field is not a number");
             }
-            int64_t func_pointer = static_cast<int64_t>(input_data["callback_func"]);
-            _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
+            if (onSetCallback(input_data["callback_func"]) == false) {
+                output_data["status"] = "failed";
+                return;
+            }
+            output_data["status"] = "success";
             return;
         }
 
@@ -151,6 +156,12 @@ protected:
     }
 
     virtual bool onProcess(const nlohmann::json input_data_array, nlohmann::json& output_data_array) = 0;
+    virtual bool onSetCallback(int64_t func_pointer)
+    {
+        _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
+        registerController();
+        return true;
+    }
     virtual bool onAction(const std::string action, const nlohmann::json input_data_array, nlohmann::json& output_data_array)
     {
         UNUSED(action) UNUSED(input_data_array) UNUSED(output_data_array)
@@ -166,8 +177,8 @@ protected:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["action"] = "save";
         request["module"] = _workname;
+        request["action"] = "save";
         request["data"] = data;
         _callback_func(request, response);
     }
@@ -178,8 +189,8 @@ protected:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["action"] = "load";
         request["module"] = _workname;
+        request["action"] = "load";
         _callback_func(request, response);
         return response;
     }
@@ -200,6 +211,18 @@ protected:
         }
         _stashed_objects.clear();
         return jsdump;
+    }
+
+private:
+
+    void registerController()
+    {
+        nlohmann::json request;
+        nlohmann::json response;
+        request["module"] = _workname;
+        request["action"] = "ctrl_reg";
+        request["crtl_name"] = _workname;
+        _callback_func(request, response);
     }
 
 private:
