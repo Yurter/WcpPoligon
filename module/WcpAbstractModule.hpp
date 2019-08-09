@@ -231,7 +231,7 @@ private:
         nlohmann::json request;
         nlohmann::json response;
         request["module"] = _workname;
-        request["action"] = "save_result";
+        request["action"] = "save_object";
         request["object"] = jsobject;
         _callback_func(request, response);
     }
