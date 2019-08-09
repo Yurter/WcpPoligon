@@ -17,14 +17,14 @@ int main()
     /* Открытие веб-камеры на чтение */
     cv::VideoCapture source;
     source.open(WEB_CAMERA);
-    source.set(cv::CAP_PROP_FRAME_WIDTH,  6);
-    source.set(cv::CAP_PROP_FRAME_HEIGHT, 6);
+//    source.set(cv::CAP_PROP_FRAME_WIDTH,  6);
+//    source.set(cv::CAP_PROP_FRAME_HEIGHT, 6);
     cv::Mat source_image;
 
     /* Инициализация менеджера модулей */
     WcpModuleManager module_maneger("D:\\dev\\WcpPoligon\\plugins");
     for (auto&& module : module_maneger.availableModules()) {
-        std::cout << "available module: " << module << std::endl;
+//        std::cout << "available module: " << module << std::endl;
     }
     std::cout << std::endl;
     try {

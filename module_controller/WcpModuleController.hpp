@@ -33,5 +33,7 @@ private:
 
     nlohmann::json      _data_list;
 
+    cv::Mat             _processing_image;
+
 };
 

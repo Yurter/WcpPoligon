@@ -24,25 +24,25 @@ public:
     }
 
     /* Метод собирает nlohmann::json из cv::Mat */
-    static nlohmann::json imageToJson(cv::Mat& cvimage) {
-        std::vector<uchar> data_array;
+//    static nlohmann::json imageToJson(cv::Mat& cvimage) {
+//        std::vector<uchar> data_array;
 
-        if (cv::imencode(".png", cvimage, data_array) == false) {
-            throw std::exception("imageToJson failed");
-        }
+//        if (cv::imencode(".png", cvimage, data_array) == false) {
+//            throw std::exception("imageToJson failed");
+//        }
 
-        nlohmann::json jscvimage;
-        jscvimage["image"]["data"] = data_array;
+//        nlohmann::json jscvimage;
+//        jscvimage["image"]["data"] = data_array;
 
-        return jscvimage;
-    }
+//        return jscvimage;
+//    }
 
-    /* Метод собирает cv::Mat из nlohmann::json */
-    static cv::Mat jsonToImage(const nlohmann::json& jscvimage) {
-        std::vector<uchar> data = jscvimage["data"];
-        cv::Mat cvimage = cv::imdecode(data, 1);
-        return cvimage;
-    }
+//    /* Метод собирает cv::Mat из nlohmann::json */
+//    static cv::Mat jsonToImage(const nlohmann::json& jscvimage) {
+//        std::vector<uchar> data = jscvimage["data"];
+//        cv::Mat cvimage = cv::imdecode(data, 1);
+//        return cvimage;
+//    }
 
     /* Метод собирает джейсон из cv::Rect */
     template<typename cvRect>
@@ -75,6 +75,13 @@ public:
         nlohmann::json jsobject;
         jsobject[key] = value;
         return jsobject;
+    }
+
+    /* ? */
+    static nlohmann::json imageToJson(cv::Mat& cvimage) {
+        nlohmann::json jsimage;
+        jsimage["image"] = reinterpret_cast<uint64_t>(&cvimage);
+        return jsimage;
     }
 
     /* Метод конвертирует изображение из openCV в Dlib */
