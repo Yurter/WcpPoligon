@@ -6,12 +6,19 @@
 
 #define WEB_CAMERA 0
 
+static CallbackFunc callback_func = [](nlohmann::json request, nlohmann::json& response) {
+    std::cout << "callback_func: " << request << std::endl;
+    UNUSED(response)
+};
+
 int main()
 {
 
     /* Открытие веб-камеры на чтение */
     cv::VideoCapture source;
     source.open(WEB_CAMERA);
+    source.set(cv::CAP_PROP_FRAME_WIDTH,  6);
+    source.set(cv::CAP_PROP_FRAME_HEIGHT, 6);
     cv::Mat source_image;
 
     /* Инициализация менеджера модулей */
@@ -30,19 +37,24 @@ int main()
         module_controller.add(module_handler.module());
     }
 
+    /* Устанвока сallback-функции */
+    module_controller.setCallbackFunc(callback_func);
+
     try {
         { /* Основной цикл */
             while (cv::waitKey(5) != 'q') {
                 source >> source_image;
+
+//                resize(source_image, source_image, cv::Size(1,1), 0, 0, cv::INTER_CUBIC); // Для легкого чтения лога json с картинкой
 
                 static int frame_counter = 0; /* Отладочный пропуск кадров для легкого чтения лога */
                 frame_counter++;
                 if (frame_counter % 40 == 0) {
                     auto result = module_controller.propagateImage(source_image);
 
-                    std::cout << "===========================================" << std::endl;
+                    int ii = 0;
                     for (auto&& elem : result) {
-                        std::cout << "| " << elem.begin().key() << std::endl;
+                        std::cout << "| " << ii++ << " | " << elem.begin().key() << std::endl;
                     }
                     std::cout << "===========================================" << std::endl;
                 }
