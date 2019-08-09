@@ -195,8 +195,8 @@ protected:
     {
         /* Преобразование полей json-объекта в массив */
         nlohmann::json jsdump;
-        for (auto&& it = _stashed_objects.begin(); it != _stashed_objects.end(); ++it) {
-            jsdump.push_back(*it);
+        for (auto& item : _stashed_objects.items()) {
+            jsdump.push_back(item);
         }
         _stashed_objects.clear();
         return jsdump;
