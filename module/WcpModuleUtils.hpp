@@ -4,20 +4,27 @@
 #include <opencv2/imgcodecs.hpp>
 #include <iostream>
 
+using JsDataType = nlohmann::detail::value_t;
+
 class WcpModuleUtils
 {
 
 public:
 
     /* Метод проверяет наличие ключа (key) в переданном nlohmann::json */
-    static bool keyExist(const nlohmann::json& js, std::string key)
-    {
+    static bool keyExist(const nlohmann::json& js, std::string key) {
         return js.find(key) != js.end();
     }
 
+    /* Метод проверяет наличие и валидность поля с ключом key */
+    static bool ckeckJsonField(const nlohmann::json& js, std::string key, JsDataType type) {
+        if (keyExist(js, key) == false) { return false; }
+        if (js[key].type() != type)     { return false; }
+        return true;
+    }
+
     /* Метод собирает nlohmann::json из cv::Mat */
-    static nlohmann::json imageToJson(cv::Mat& cvimage)
-    {
+    static nlohmann::json imageToJson(cv::Mat& cvimage) {
         std::vector<uchar> data_array;
 
         if (cv::imencode(".png", cvimage, data_array) == false) {
@@ -31,8 +38,7 @@ public:
     }
 
     /* Метод собирает cv::Mat из nlohmann::json */
-    static cv::Mat jsonToImage(const nlohmann::json& jscvimage)
-    {
+    static cv::Mat jsonToImage(const nlohmann::json& jscvimage) {
         std::vector<uchar> data = jscvimage["data"];
         cv::Mat cvimage = cv::imdecode(data, 1);
         return cvimage;
@@ -40,8 +46,7 @@ public:
 
     /* Метод собирает джейсон из cv::Rect */
     template<typename cvRect>
-    static nlohmann::json rectToJson(cvRect cvrect)
-    {
+    static nlohmann::json rectToJson(cvRect cvrect) {
         nlohmann::json jsrect;
 
         jsrect["rect"]["x"] = cvrect.x;
@@ -54,8 +59,7 @@ public:
 
     /* Метод собирает cv::Rect из nlohmann::json */
     template<typename cvRect>
-    static cvRect jsonToRect(nlohmann::json jsrect)
-    {
+    static cvRect jsonToRect(nlohmann::json jsrect) {
         cvRect cvrect;
 
         cvrect.x = jsrect["rect"]["x"];
@@ -67,8 +71,7 @@ public:
     }
 
     /* Метод собирает джейсон из cv::Rect */
-    static nlohmann::json createJsonObject(std::string key, nlohmann::json value)
-    {
+    static nlohmann::json createJsonObject(std::string key, nlohmann::json value) {
         nlohmann::json jsobject;
         jsobject[key] = value;
         return jsobject;
