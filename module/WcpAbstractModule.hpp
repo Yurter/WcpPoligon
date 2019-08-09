@@ -16,12 +16,6 @@ enum ModuleType {
     Logic               /* Сбор и анализ данных, полученных от других модулей           */
 };
 
-/* Зависимость модуля от контекста */
-enum ModuleContext {
-    ContextDependent,   /* Модулю необходимо хранить и обрабатывать информацию в конкретном контексте   */
-    ContextIndependent  /* Модуль не зависит от контекста (от результатов предыдущих обращений)         */
-};
-
 /* Callback-функция для выполнения запросов из модуля */
 using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
 
@@ -36,15 +30,19 @@ public:
 
     WcpAbstractModule(ModuleType type                   /* Реализуемый тип модуля                                       */
                       , std::string name                /* Имя модуля в произвольной форме, отображается пользователю   */
+                      , std::string workname            /* Имя модуля в уникальной, лаконичной, неизменной от версии к
+                                                         * версии форме, используется в качестве метки при хранении
+                                                         * данных модуля во внешнем постоянном хранилище, совпадает с
+                                                         * именем индивидуальной для кажого модуля директорей, в которой
+                                                         * находятся dll файл и необходимые для работы файлы            */
                       , std::string version             /* Версия модуля в формате чисел разделенных точками            */
-                      , std::string workdir             /* Директория, в которой модуль может найти необходимые файлы   */
-                      , std::string implicit_dependence /* Директория, в которой модуль может найти необходимые файлы   */
-                      , std::string explicit_dependence /* Директория, в которой модуль может найти необходимые файлы   */
+                      , std::string explicit_dependence /* Имя желаемого объекта, который модуль может обработать       */
+                      , std::string implicit_dependence /* Имя допустимого объекта, который модуль может обработать     */
                       ) :
         _type(type)
       , _name(name)
+      , _workname(workname)
       , _version(version)
-      , _workdir(workdir)
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
       , _callback_func(nullptr)
@@ -169,6 +167,7 @@ protected:
         nlohmann::json request;
         nlohmann::json response;
         request["action"] = "save";
+        request["module"] = _workname;
         request["data"] = data;
         _callback_func(request, response);
     }
@@ -180,22 +179,45 @@ protected:
         nlohmann::json request;
         nlohmann::json response;
         request["action"] = "load";
+        request["module"] = _workname;
         _callback_func(request, response);
         return response;
     }
 
+    /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
+    void stashObject(std::string obj_name, nlohmann::json jsobj_value)
+    {
+        /* Формирование json-объекта, поля котрого содержат массивы однотипных объектов */
+        _stashed_objects[obj_name].push_back(jsobj_value);
+    }
+    /* Метод вызывается внутри реализации onProcess при завршении обработки входных данных и формировании ответа */
+    nlohmann::json dumpObjects()
+    {
+        /* Преобразование полей json-объекта в массив */
+        nlohmann::json jsdump;
+        for (auto&& it = _stashed_objects.begin(); it != _stashed_objects.end(); ++it) {
+            jsdump.push_back(*it);
+        }
+        _stashed_objects.clear();
+        return jsdump;
+    }
+
 private:
 
+    /* Метаданные */
     ModuleType          _type;
     std::string         _name;
+    std::string         _workname;
     std::string         _version;
-    std::string         _workdir;
     std::string         _implicit_dependence;
     std::string         _explicit_dependence;
 
+    /* Связь от модуля к ядру */
     CallbackFunc        _callback_func;
 
+    /* Вспомогательные члены класса */
     std::string         _json_dump_buffer;
     bool                _used;
+    nlohmann::json      _stashed_objects;
 
 };
