@@ -77,4 +77,16 @@ public:
         return jsobject;
     }
 
+    /* Метод конвертирует изображение из openCV в Dlib */
+//    static dlib::matrix<rgb_pixel> cv2dlib(cv::Mat& cvimage) {
+//        dlib::matrix<rgb_pixel> dlib_image;
+//        dlib::assign_image(dlib_image, dlib::cv_image<bgr_pixel>(cvimage));
+//        return dlib_image;
+//    }
+
+    /* Метод конвертирует изображение из Dlib в openCV */
+//    static cv::Mat cv2dlib(dlib::matrix<rgb_pixel>& cvimage) {
+//        //
+//    }
+
 };
