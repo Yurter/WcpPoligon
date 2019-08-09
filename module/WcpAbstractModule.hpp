@@ -78,9 +78,9 @@ protected:
     /* Требования к формату данных:
      * * На вход:
      * {
-     *      "action"     : String,          ex.: "process"
-     *      "data_array" : Array            ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
-     *                                      ex. 2: [ car_0, car_1, car_2, ... car_N ]       Распознание автомобильных номеров
+     *      "action"     : String,    ex.: "process"
+     *      "data_array" : Array      ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
+     *                                ex. 2: [ car_0, car_1, car_2, ... car_N ]       Распознание автомобильных номеров
      * }
      * * На выход:
      * {
@@ -91,89 +91,64 @@ protected:
     **/
     void process(const nlohmann::json input_data, nlohmann::json& output_data) {
 
-        /* Проверка наличия полей с определенными ключами */
-        if (WcpModuleUtils::keyExist(input_data, "action") == false) {
-            throw_exception("missing key \"action\" in input data");
-        }
-
-        /* Проверка типа полей */
-        if (input_data["action"].is_string() == false) {
-            throw_exception("value of \"action\" field is not a string");
+        if (WcpModuleUtils::ckeckJsonField(input_data, "action", JsDataType::string) == false) {
+            throw_exception("invalid or missing \"action\" field in input data");
         }
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (input_data["action"] == "process") {
-            if (WcpModuleUtils::keyExist(input_data, "data_array") == false) {
-                throw_exception("missing key \"data_array\" in input data");
-            }
-            if (input_data["data_array"].is_array() == false) {
-                throw_exception("value of \"data_array\" field is not an array");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "data_array", JsDataType::array) == false) {
+                throw_exception("invalid or missing \"data_array\" field in input data");
             }
 
             nlohmann::json input_data_array = input_data["data_array"];
             nlohmann::json output_data_array;
-            if (onProcess(input_data_array, output_data_array) == false) {
+            onProcess(input_data_array);
+
+            output_data_array = dumpObjects();
+
+            if (output_data_array.empty()) {
                 output_data["status"] = "failed";
                 return;
             }
-            /* Проверка ответа модуля */
-            if (output_data_array.is_array() == false) {
-                throw_exception("returned value is not an array");
-            }
+
             output_data["status"] = "success";
             output_data["data_array"] = output_data_array;
             return;
         }
 
         if (input_data["action"] == "set_callback") {
-            if (WcpModuleUtils::keyExist(input_data, "callback_func") == false) {
-                throw_exception("missing key \"callback_func\" in input data");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "callback_func", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"callback_func\" field in input data");
             }
-            if (input_data["callback_func"].is_number() == false) {
-                throw_exception("value of \"callback_func\" field is not a number");
-            }
-            if (onSetCallback(input_data["callback_func"]) == false) {
-                output_data["status"] = "failed";
-                return;
-            }
+
+            onSetCallback(input_data["callback_func"]);
             output_data["status"] = "success";
             return;
         }
 
         /* При непредусмотренном типе действия, происходит вызов универсального метода */
         {
-            if (WcpModuleUtils::keyExist(input_data, "data_array") == false) {
-                throw_exception("missing key \"data_array\" in input data");
-            }
-            if (input_data["data_array"].is_array() == false) {
-                throw_exception("value of \"data_array\" field is not an array");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "data_array", JsDataType::array) == false) {
+                throw_exception("invalid or missing \"data_array\" field in input data");
             }
 
             nlohmann::json input_data_array = input_data["data_array"];
-            nlohmann::json output_data_array;
-            if (onAction(input_data["action"], input_data_array, output_data_array) == false) {
-                output_data["status"] = "failed";
-                return;
-            }
-            /* Проверка ответа модуля */
-            if (output_data_array.is_array() == false) {
-                throw_exception("returned value is not an array");
-            }
+            onAction(input_data["action"], input_data_array);
             output_data["status"] = "success";
-            output_data["data_array"] = output_data_array;
             return;
         }
+
     }
 
-    virtual bool onProcess(const nlohmann::json input_data_array, nlohmann::json& output_data_array) = 0;
-    virtual bool onSetCallback(int64_t func_pointer) {
+    virtual void onProcess(const nlohmann::json input_data_array) = 0;
+    virtual void onSetCallback(uint64_t func_pointer) {
         _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
         registerController();
         loadData();
-        return true;
     }
-    virtual bool onAction(const std::string action, const nlohmann::json input_data_array, nlohmann::json& output_data_array) {
-        UNUSED(action) UNUSED(input_data_array) UNUSED(output_data_array)
+    virtual void onAction(const std::string action, const nlohmann::json input_data_array) {
+        UNUSED(action) UNUSED(input_data_array)
         throw_exception(action + " action called, but virtual function \"onAction\" not overrided");
     }
 
@@ -199,18 +174,18 @@ protected:
         saveResultingObject(resulting_object);
     }
 
+private:
+
     /* Метод вызывается внутри реализации onProcess при завршении обработки входных данных и формировании ответа */
     nlohmann::json dumpObjects() {
         /* Преобразование полей json-объекта в массив */
-        nlohmann::json jsdump;
+        auto jsdump = nlohmann::json::array();
         for (auto& item : _stashed_objects.items()) {
             jsdump.push_back(item);
         }
         _stashed_objects.clear();
         return jsdump;
     }
-
-private:
 
     /* Модуль может использовать постоянное внешнее хранилище данных, содержимое которого
      * хранится в произваольной форме. Запись и чтение происходит со всей информацией разом */
