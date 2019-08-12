@@ -48,6 +48,7 @@ public:
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
       , _callback_func(nullptr)
+      , _uid(0)
       , _used(false)
     { }
 
@@ -62,6 +63,7 @@ public:
     const char*         implicitDependence()    const { return _implicit_dependence.c_str();    }
     const char*         explicitDependence()    const { return _explicit_dependence.c_str();    }
     bool                used()                  const { return _used;                           }
+    uint64_t            uid()                   const { return _uid;                            }
 
     void                setUsed(bool used) { _used = used; }
 
@@ -154,13 +156,13 @@ protected:
 
     /* Метод возвращает данные, которые были сохранены ранее методом writeData */
     nlohmann::json readData() {
-        return _data_buffer;
+        return _module_data;
     }
 
     /* Метод заменяет данные, которые были сохранены ранее, новыми, переданными в качестве аргумента        */
     /* Дозапись осуществляется путем вызова метода чтения, ручной модификацией данных, вызова метода записи */
     void writeData(nlohmann::json jsupdated_data) {
-        _data_buffer = jsupdated_data;
+        _module_data = jsupdated_data;
         saveData();
     }
 
@@ -198,7 +200,7 @@ private:
         request["module"] = _workname;
         request["action"] = "load";
         _callback_func(request, response);
-        _data_buffer = response;
+        _module_data = response;
     }
 
     void saveData() {
@@ -209,7 +211,7 @@ private:
         nlohmann::json response;
         request["module"] = _workname;
         request["action"] = "save";
-        request["data"] = _data_buffer;
+        request["data"] = _module_data;
         _callback_func(request, response);
     }
 
@@ -222,6 +224,11 @@ private:
         request["module"] = _workname;
         request["action"] = "register";
         _callback_func(request, response);
+
+        if (WcpModuleUtils::ckeckJsonField(response, "uid", JsDataType::number_unsigned) == false) {
+            throw_exception("invalid or missing \"uid\" field in input data");
+        }
+        _uid = response["uid"];
     }
 
     void saveResultingObject(nlohmann::json jsobject) {
@@ -246,13 +253,14 @@ private:
     std::string         _implicit_dependence;
     std::string         _explicit_dependence;
 
-    /* Связь от модуля к ядру */
-    CallbackFunc        _callback_func;
-
     /* Вспомогательные члены класса */
-    std::string         _json_dump_buffer;
-    bool                _used;
-    nlohmann::json      _stashed_objects;
-    nlohmann::json      _data_buffer;
+    CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
+    uint64_t            _uid;               /* UID модуля в контексте основной программы                            */
+    std::string         _json_dump_buffer;  /* Возвращаемый указатель метода process(const char* input_data)        *
+                                             * ссылается на содержмиое этой строки                                  */
+    bool                _used;              /* Флаг, не позволяющий повтроное использование модуля в контексте      *
+                                             * одной итерации обработки изображения                                 */
+    nlohmann::json      _stashed_objects;   /* Буффер результирующих объектов                                       */
+    nlohmann::json      _module_data;       /* Копия произвольных данных модуля, хранящихся во внешнем хранилище    */
 
 };
