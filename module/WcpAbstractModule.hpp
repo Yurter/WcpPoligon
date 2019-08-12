@@ -106,9 +106,9 @@ protected:
                 throw_exception("invalid or missing \"object_array1d\" field in input data");
             }
 
-            nlohmann::json input_object_array2d = input_data["object_array1d"];
+            nlohmann::json input_object_array1d = input_data["object_array1d"];
             nlohmann::json output_object_array2d;
-            onProcess(input_object_array2d);
+            onProcess(input_object_array1d);
 
             output_object_array2d = dumpObjects();
 
@@ -170,10 +170,10 @@ protected:
     }
 
     /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
-    void stashObject(std::string obj_name, nlohmann::json jsobj_value) {
+    void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
         /* Формирование json-объекта, поля котрого содержат массивы однотипных объектов */
         jsobj_value["object_uid"] = uint64_t(_objects_uid[obj_name]);
-        jsobj_value["parent_uid"] = uint64_t(0);
+        jsobj_value["parent_uid"] = uint64_t(parent["object_uid"]);
         _objects_uid[obj_name] = uint64_t(_objects_uid[obj_name]) + 1;
         _stashed_objects[obj_name].push_back(jsobj_value);
         /* Запсись полученного объекта в базу данных */
