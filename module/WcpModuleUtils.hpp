@@ -84,6 +84,14 @@ public:
         return jsimage;
     }
 
+    /* ? */
+    static cv::Mat jsonToImage(nlohmann::json jsimage) {
+        uint64_t image_ptr = jsimage;
+        cv::Mat* image = reinterpret_cast<cv::Mat*>(image_ptr);
+        cv::Mat cvimage = cv::Mat(*image);
+        return cvimage;
+    }
+
     /* Метод конвертирует изображение из openCV в Dlib */
 //    static dlib::matrix<rgb_pixel> cv2dlib(cv::Mat& cvimage) {
 //        dlib::matrix<rgb_pixel> dlib_image;

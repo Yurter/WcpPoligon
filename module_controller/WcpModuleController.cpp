@@ -12,7 +12,6 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
     _processing_image = image;
 
     nlohmann::json source_array;
-//    source_array["source_image"].push_back(uint64_t(&_processing_image));
     source_array["source_image"].push_back(WcpModuleUtils::imageToJson(_processing_image));
     _data_list.push_back(source_array);
 
@@ -27,24 +26,6 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
 
     return output_json;
 }
-
-//nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
-//{
-//    nlohmann::json source_array;
-//    source_array["source_image"].push_back(WcpModuleUtils::imageToJson(image));
-//    _data_list.push_back(source_array);
-
-//    recursion();
-
-//    nlohmann::json output_json;
-//    std::swap(output_json, _data_list);
-
-//    for (auto&& module : _module_list) {
-//        module->setUsed(false);
-//    }
-
-//    return output_json;
-//}
 
 void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
 {
