@@ -19,6 +19,8 @@ enum ModuleType {
 /* Callback-функция для выполнения запросов из модуля */
 using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
 
+using StringList = std::list<std::string>;
+
 #define throw_exception(msg) throw std::exception(std::string(_name + " : " + std::string(msg)).c_str())
 #define UNUSED(x) (void)x;
 
@@ -40,6 +42,7 @@ public:
                       , std::string version             /* Версия модуля в формате чисел разделенных точками            */
                       , std::string explicit_dependence /* Имя желаемого объекта, который модуль может обработать       */
                       , std::string implicit_dependence /* Имя допустимого объекта, который модуль может обработать     */
+                      , StringList  result_object_list  /* ? */
                       ) :
         _type(type)
       , _name(name)
@@ -47,8 +50,9 @@ public:
       , _version(version)
       , _implicit_dependence(implicit_dependence)
       , _explicit_dependence(explicit_dependence)
+      , _result_object_list(result_object_list)
       , _callback_func(nullptr)
-      , _uid(0)
+      , _objects_uid(0)
       , _used(false)
     { }
 
@@ -63,7 +67,6 @@ public:
     const char*         implicitDependence()    const { return _implicit_dependence.c_str();    }
     const char*         explicitDependence()    const { return _explicit_dependence.c_str();    }
     bool                used()                  const { return _used;                           }
-    uint64_t            uid()                   const { return _uid;                            }
 
     void                setUsed(bool used) { _used = used; }
 
@@ -81,13 +84,13 @@ protected:
      * * На вход:
      * {
      *      "action"     : String,    ex.: "process"
-     *      "data_array" : Array      ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
+     *      "object_array2d" : Array      ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
      *                                ex. 2: [ car_0, car_1, car_2, ... car_N ]       Распознание автомобильных номеров
      * }
      * * На выход:
      * {
      *      "status"     : String,    ex.: "success"/"failed"
-     *      "data_array" : Array      ex. 1: [ "cat" : cat_array, "dog" : dog_array, ... "smth" : smth_array ] Мультиобъектный детектор
+     *      "object_array2d" : Array      ex. 1: [ "cat" : cat_array, "dog" : dog_array, ... "smth" : smth_array ] Мультиобъектный детектор
      *                                ex. 2: [ "face" : face_array ]                                           Монообъектный детектор
      * }
     **/
@@ -99,29 +102,23 @@ protected:
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (input_data["action"] == "process") {
-            if (WcpModuleUtils::ckeckJsonField(input_data, "data_array", JsDataType::array) == false) {
-                throw_exception("invalid or missing \"data_array\" field in input data");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "object_array1d", JsDataType::array) == false) {
+                throw_exception("invalid or missing \"object_array1d\" field in input data");
             }
-            if (WcpModuleUtils::ckeckJsonField(input_data, "uid", JsDataType::number_unsigned) == false) {
-                throw_exception("invalid or missing \"uid\" field in input data");
-            }
-            uint64_t parent_uid = input_data["uid"];
 
-            nlohmann::json input_data_array = input_data["data_array"];
-            nlohmann::json output_data_array;
-            onProcess(input_data_array);
+            nlohmann::json input_object_array2d = input_data["object_array1d"];
+            nlohmann::json output_object_array2d;
+            onProcess(input_object_array2d);
 
-            output_data_array = dumpObjects();
+            output_object_array2d = dumpObjects();
 
-            if (output_data_array.empty()) {
+            if (output_object_array2d.empty()) {
                 output_data["status"] = "failed";
                 return;
             }
 
-            output_data["uid"] = _uid;
             output_data["status"] = "success";
-            output_data["data_array"] = output_data_array;
-            output_data["parent_uid"] = parent_uid;
+            output_data["object_array2d"] = output_object_array2d;
             return;
         }
 
@@ -137,26 +134,26 @@ protected:
 
         /* При непредусмотренном типе действия, происходит вызов универсального метода */
         {
-            if (WcpModuleUtils::ckeckJsonField(input_data, "data_array", JsDataType::array) == false) {
-                throw_exception("invalid or missing \"data_array\" field in input data");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "object_array2d", JsDataType::array) == false) {
+                throw_exception("invalid or missing \"object_array2d\" field in input data");
             }
 
-            nlohmann::json input_data_array = input_data["data_array"];
-            onAction(input_data["action"], input_data_array);
+            nlohmann::json input_object_array2d = input_data["object_array2d"];
+            onAction(input_data["action"], input_object_array2d);
             output_data["status"] = "success";
             return;
         }
 
     }
 
-    virtual void onProcess(const nlohmann::json input_data_array) = 0;
+    virtual void onProcess(const nlohmann::json input_object_array2d) = 0;
     virtual void onSetCallback(uint64_t func_pointer) {
         _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
         registerController();
         loadData();
     }
-    virtual void onAction(const std::string action, const nlohmann::json input_data_array) {
-        UNUSED(action) UNUSED(input_data_array)
+    virtual void onAction(const std::string action, const nlohmann::json input_object_array2d) {
+        UNUSED(action) UNUSED(input_object_array2d)
         throw_exception(action + " action called, but virtual function \"onAction\" not overrided");
     }
 
@@ -175,6 +172,9 @@ protected:
     /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
     void stashObject(std::string obj_name, nlohmann::json jsobj_value) {
         /* Формирование json-объекта, поля котрого содержат массивы однотипных объектов */
+        jsobj_value["object_uid"] = uint64_t(_objects_uid[obj_name]);
+        jsobj_value["parent_uid"] = uint64_t(0);
+        _objects_uid[obj_name] = uint64_t(_objects_uid[obj_name]) + 1;
         _stashed_objects[obj_name].push_back(jsobj_value);
         /* Запсись полученного объекта в базу данных */
         nlohmann::json resulting_object;
@@ -187,10 +187,7 @@ private:
     /* Метод вызывается внутри реализации onProcess при завршении обработки входных данных и формировании ответа */
     nlohmann::json dumpObjects() {
         /* Преобразование полей json-объекта в массив */
-        auto jsdump = nlohmann::json::array();
-        for (auto& item : _stashed_objects.items()) {
-            jsdump.push_back(item);
-        }
+        auto jsdump = WcpModuleUtils::objectToArray(_stashed_objects);
         _stashed_objects.clear();
         return jsdump;
     }
@@ -229,12 +226,14 @@ private:
         nlohmann::json response;
         request["module"] = _workname;
         request["action"] = "register";
+        request["object_list"] = _result_object_list;
         _callback_func(request, response);
 
-        if (WcpModuleUtils::ckeckJsonField(response, "uid", JsDataType::number_unsigned) == false) {
-            throw_exception("invalid or missing \"uid\" field in response");
+        if (WcpModuleUtils::ckeckJsonField(response, "objects_uid", JsDataType::array) == false) {
+            throw_exception("invalid or missing \"objects_uid\" field in response");
         }
-        _uid = response["uid"];
+        auto objects_uid_array = response["objects_uid"];
+        _objects_uid = WcpModuleUtils::arrayToObject(objects_uid_array);
     }
 
     void saveResultingObject(nlohmann::json jsobject) {
@@ -258,10 +257,11 @@ private:
     std::string         _version;
     std::string         _implicit_dependence;
     std::string         _explicit_dependence;
+    StringList          _result_object_list;
 
     /* Вспомогательные члены класса */
     CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
-    uint64_t            _uid;               /* UID модуля в контексте основной программы                            */
+    nlohmann::json      _objects_uid;       /* UID объекта в контексте моудуля                                      */
     std::string         _json_dump_buffer;  /* Возвращаемый указатель метода process(const char* input_data)        *
                                              * ссылается на содержмиое этой строки                                  */
     bool                _used;              /* Флаг, не позволяющий повтроное использование модуля в контексте      *

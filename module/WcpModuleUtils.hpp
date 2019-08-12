@@ -25,14 +25,14 @@ public:
 
     /* Метод собирает nlohmann::json из cv::Mat */
 //    static nlohmann::json imageToJson(cv::Mat& cvimage) {
-//        std::vector<uchar> data_array;
+//        std::vector<uchar> object_array;
 
-//        if (cv::imencode(".png", cvimage, data_array) == false) {
+//        if (cv::imencode(".png", cvimage, object_array) == false) {
 //            throw std::exception("imageToJson failed");
 //        }
 
 //        nlohmann::json jscvimage;
-//        jscvimage["image"]["data"] = data_array;
+//        jscvimage["image"]["data"] = object_array;
 
 //        return jscvimage;
 //    }
@@ -91,6 +91,27 @@ public:
         cv::Mat cvimage = cv::Mat(*image);
         return cvimage;
     }
+
+    /* ? */
+    static nlohmann::json arrayToObject(nlohmann::json jsarray) {
+         nlohmann::json jsobject;
+        for (auto&& elem : jsarray) {
+            auto it = elem.begin();
+            jsobject[it.key()] = it.value();
+        }
+        return jsobject;
+    }
+
+    /* ? */
+    static nlohmann::json objectToArray(nlohmann::json jsobject) {
+        auto jsarray = nlohmann::json::array();
+        for (auto& item : jsobject.items()) {
+            std::cout << "item: " << item << std::endl;
+            jsarray.push_back(item);
+        }
+        return jsarray;
+    }
+
 
     /* Метод конвертирует изображение из openCV в Dlib */
 //    static dlib::matrix<rgb_pixel> cv2dlib(cv::Mat& cvimage) {

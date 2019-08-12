@@ -26,7 +26,7 @@ private:
 
     void                processRecursively();
 
-    void                createSourceArray();
+    void                createSourceObject();
     void                resetModules();
 
 private:

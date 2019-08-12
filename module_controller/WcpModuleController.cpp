@@ -11,7 +11,7 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
 {
     _processing_image = image;
 
-    createSourceArray();
+    createSourceObject();
     processRecursively();
     resetModules();
 
@@ -35,34 +35,40 @@ void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
     }
 }
 
+//result: [{"id":0,"source_image":[{"image":145858885648}]}]
+//result: [{"id":0,"name":null,"source_image":[{"image":110980232080}]}]
+//result: [{"name":"source_image","object_array2d":[{"image":1043051049888}],"parent_id":0,"uid":0},{"extra":["debug:some_extra_data"]},{"motion":[{"image":1043051044624}]}]
 void WcpModuleController::processRecursively()
 {
-    /* Итерация по ключам полей входного джейсона */
-    for (auto&& data : _processing_data_list) {
-        auto js_data = data.begin(); /* Элемент массива как json для обращения к ключу и значению */
-
-        if (js_data == data.end()) {
-            throw std::exception("jsdata == data.end()");
-        }
-
-        for (auto&& module : _module_list) { /* Поиск среди неотработавших модулей */
+    /* Итерация по результирующим объектам отработавших модулей */
+    for (auto&& js_class : _processing_data_list) {
+        /* Поиск среди неотработавших модулей */
+        for (auto&& module : _module_list) {
             if (module->used()) { continue; }
 
             /* Если в куче содержится поле со значением - массивом объектов,
              * которое может обработать один из модулей, передаем его ему */
-            if (js_data.key() == std::string(module->explicitDependence())) {
+            if (js_class["name"] == std::string(module->explicitDependence())) {
                 module->setUsed(true); /* Исключение повторного использования модуля */
 
                 /* Формирование входных данных */
                 nlohmann::json js_process;
                 js_process["action"] = "process";
-                js_process["data_array"] = js_data.value();
+                js_process["object_array1d"] = js_class["object_array1d"]; // Список объектов класса
 
                 auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
 
+                 std::cout << "module_answer: " << module_answer << std::endl;
+
                 if (module_answer["status"] == "success") {
                     /* Ответ модуля разбивается на объекты и добавляется в кучу */
-                    for (auto&& answer_elem : module_answer["data_array"]) {
+                    for (auto&& answer_elem : module_answer["object_array2d"]) {
+                        auto it = answer_elem.begin();
+                        nlohmann::json js_resulting_class = {
+                            { "name" , it.key() }
+                            , { "object_array1d", it.value() }
+                        };
+                        std::cout << "js_resulting_class: " << js_resulting_class << std::endl;
                         _processing_data_list.push_back(answer_elem);
                     }
 
@@ -73,13 +79,54 @@ void WcpModuleController::processRecursively()
         }
     }
 }
+//void WcpModuleController::processRecursively()
+//{
+//    /* Итерация по ключам полей входного джейсона */
+//    for (auto&& data : _processing_data_list) {
+//        auto js_data = data.begin(); /* Элемент массива как json для обращения к ключу и значению */
 
-void WcpModuleController::createSourceArray()
+//        if (js_data == data.end()) {
+//            throw std::exception("jsdata == data.end()");
+//        }
+
+//        for (auto&& module : _module_list) { /* Поиск среди неотработавших модулей */
+//            if (module->used()) { continue; }
+
+//            /* Если в куче содержится поле со значением - массивом объектов,
+//             * которое может обработать один из модулей, передаем его ему */
+//            if (js_data.key() == std::string(module->explicitDependence())) {
+//                module->setUsed(true); /* Исключение повторного использования модуля */
+
+//                /* Формирование входных данных */
+//                nlohmann::json js_process;
+//                js_process["action"] = "process";
+//                js_process["object_array"] = js_data.value();
+
+//                auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
+
+//                if (module_answer["status"] == "success") {
+//                    /* Ответ модуля разбивается на объекты и добавляется в кучу */
+//                    for (auto&& answer_elem : module_answer["object_array"]) {
+//                        _processing_data_list.push_back(answer_elem);
+//                    }
+
+//                    /* Попытка обработать полученный ответ другими модулями */
+//                    processRecursively();
+//                }
+//            }
+//        }
+//    }
+//}
+
+void WcpModuleController::createSourceObject()
 {
-    nlohmann::json source_array;
-    source_array["source_image"].push_back(WcpModuleUtils::imageToJson(_processing_image));
-    source_array["id"] = uint64_t(0);
-    _processing_data_list.push_back(source_array);
+    nlohmann::json source_object;
+    source_object["name"] = "source_image";
+    auto jsimage = WcpModuleUtils::imageToJson(_processing_image);
+    jsimage["object_uid"] = uint64_t(0);
+    jsimage["parent_uid"] = uint64_t(0);
+    source_object["object_array1d"].push_back(jsimage);
+    _processing_data_list.push_back(source_object);
 }
 
 void WcpModuleController::resetModules()
