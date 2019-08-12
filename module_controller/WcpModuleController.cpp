@@ -11,18 +11,12 @@ nlohmann::json WcpModuleController::propagateImage(cv::Mat image)
 {
     _processing_image = image;
 
-    nlohmann::json source_array;
-    source_array["source_image"].push_back(WcpModuleUtils::imageToJson(_processing_image));
-    _data_list.push_back(source_array);
-
-    recursion();
+    createSourceArray();
+    processRecursively();
+    resetModules();
 
     nlohmann::json output_json;
-    std::swap(output_json, _data_list);
-
-    for (auto&& module : _module_list) {
-        module->setUsed(false);
-    }
+    std::swap(output_json, _processing_data_list);
 
     return output_json;
 }
@@ -41,10 +35,10 @@ void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
     }
 }
 
-void WcpModuleController::recursion()
+void WcpModuleController::processRecursively()
 {
     /* Итерация по ключам полей входного джейсона */
-    for (auto&& data : _data_list) {
+    for (auto&& data : _processing_data_list) {
         auto js_data = data.begin(); /* Элемент массива как json для обращения к ключу и значению */
 
         if (js_data == data.end()) {
@@ -69,13 +63,27 @@ void WcpModuleController::recursion()
                 if (module_answer["status"] == "success") {
                     /* Ответ модуля разбивается на объекты и добавляется в кучу */
                     for (auto&& answer_elem : module_answer["data_array"]) {
-                        _data_list.push_back(answer_elem);
+                        _processing_data_list.push_back(answer_elem);
                     }
 
                     /* Попытка обработать полученный ответ другими модулями */
-                    recursion();
+                    processRecursively();
                 }
             }
         }
+    }
+}
+
+void WcpModuleController::createSourceArray()
+{
+    nlohmann::json source_array;
+    source_array["source_image"].push_back(WcpModuleUtils::imageToJson(_processing_image));
+    _processing_data_list.push_back(source_array);
+}
+
+void WcpModuleController::resetModules()
+{
+    for (auto&& module : _module_list) {
+        module->setUsed(false);
     }
 }

@@ -24,16 +24,17 @@ public:
 
 private:
 
-    void                recursion();
+    void                processRecursively();
 
+    void                createSourceArray();
+    void                resetModules();
 
 private:
 
-    ModuleList          _module_list;
+    ModuleList          _module_list; /* Список всех модулей, участвующих в обработке изображения */
 
-    nlohmann::json      _data_list;
-
-    cv::Mat             _processing_image;
+    nlohmann::json      _processing_data_list;  /* Массив результатов обработки модулей */
+    cv::Mat             _processing_image;      /* Обрабатываемое изображение           */
 
 };
 
