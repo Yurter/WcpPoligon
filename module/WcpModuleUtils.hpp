@@ -106,7 +106,6 @@ public:
     static nlohmann::json objectToArray(nlohmann::json jsobject) {
         auto jsarray = nlohmann::json::array();
         for (auto& item : jsobject.items()) {
-            std::cout << "item: " << item << std::endl;
             jsarray.push_back(item);
         }
         return jsarray;

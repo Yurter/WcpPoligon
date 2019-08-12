@@ -35,9 +35,6 @@ void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
     }
 }
 
-//result: [{"id":0,"source_image":[{"image":145858885648}]}]
-//result: [{"id":0,"name":null,"source_image":[{"image":110980232080}]}]
-//result: [{"name":"source_image","object_array2d":[{"image":1043051049888}],"parent_id":0,"uid":0},{"extra":["debug:some_extra_data"]},{"motion":[{"image":1043051044624}]}]
 void WcpModuleController::processRecursively()
 {
     /* Итерация по результирующим объектам отработавших модулей */
@@ -58,8 +55,6 @@ void WcpModuleController::processRecursively()
 
                 auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
 
-                 std::cout << "module_answer: " << module_answer << std::endl;
-
                 if (module_answer["status"] == "success") {
                     /* Ответ модуля разбивается на объекты и добавляется в кучу */
                     for (auto&& answer_elem : module_answer["object_array2d"]) {
@@ -68,7 +63,6 @@ void WcpModuleController::processRecursively()
                             { "name" , it.key() }
                             , { "object_array1d", it.value() }
                         };
-                        std::cout << "js_resulting_class: " << js_resulting_class << std::endl;
                         _processing_data_list.push_back(answer_elem);
                     }
 
@@ -79,44 +73,6 @@ void WcpModuleController::processRecursively()
         }
     }
 }
-//void WcpModuleController::processRecursively()
-//{
-//    /* Итерация по ключам полей входного джейсона */
-//    for (auto&& data : _processing_data_list) {
-//        auto js_data = data.begin(); /* Элемент массива как json для обращения к ключу и значению */
-
-//        if (js_data == data.end()) {
-//            throw std::exception("jsdata == data.end()");
-//        }
-
-//        for (auto&& module : _module_list) { /* Поиск среди неотработавших модулей */
-//            if (module->used()) { continue; }
-
-//            /* Если в куче содержится поле со значением - массивом объектов,
-//             * которое может обработать один из модулей, передаем его ему */
-//            if (js_data.key() == std::string(module->explicitDependence())) {
-//                module->setUsed(true); /* Исключение повторного использования модуля */
-
-//                /* Формирование входных данных */
-//                nlohmann::json js_process;
-//                js_process["action"] = "process";
-//                js_process["object_array"] = js_data.value();
-
-//                auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
-
-//                if (module_answer["status"] == "success") {
-//                    /* Ответ модуля разбивается на объекты и добавляется в кучу */
-//                    for (auto&& answer_elem : module_answer["object_array"]) {
-//                        _processing_data_list.push_back(answer_elem);
-//                    }
-
-//                    /* Попытка обработать полученный ответ другими модулями */
-//                    processRecursively();
-//                }
-//            }
-//        }
-//    }
-//}
 
 void WcpModuleController::createSourceObject()
 {
