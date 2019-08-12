@@ -102,6 +102,10 @@ protected:
             if (WcpModuleUtils::ckeckJsonField(input_data, "data_array", JsDataType::array) == false) {
                 throw_exception("invalid or missing \"data_array\" field in input data");
             }
+            if (WcpModuleUtils::ckeckJsonField(input_data, "uid", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"uid\" field in input data");
+            }
+            uint64_t parent_uid = input_data["uid"];
 
             nlohmann::json input_data_array = input_data["data_array"];
             nlohmann::json output_data_array;
@@ -114,8 +118,10 @@ protected:
                 return;
             }
 
+            output_data["uid"] = _uid;
             output_data["status"] = "success";
             output_data["data_array"] = output_data_array;
+            output_data["parent_uid"] = parent_uid;
             return;
         }
 
@@ -226,7 +232,7 @@ private:
         _callback_func(request, response);
 
         if (WcpModuleUtils::ckeckJsonField(response, "uid", JsDataType::number_unsigned) == false) {
-            throw_exception("invalid or missing \"uid\" field in input data");
+            throw_exception("invalid or missing \"uid\" field in response");
         }
         _uid = response["uid"];
     }

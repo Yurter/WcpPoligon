@@ -78,6 +78,7 @@ void WcpModuleController::createSourceArray()
 {
     nlohmann::json source_array;
     source_array["source_image"].push_back(WcpModuleUtils::imageToJson(_processing_image));
+    source_array["id"] = uint64_t(0);
     _processing_data_list.push_back(source_array);
 }
 
