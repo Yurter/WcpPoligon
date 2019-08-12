@@ -39,6 +39,7 @@ void WcpModuleController::processRecursively()
 {
     /* Итерация по результирующим объектам отработавших модулей */
     for (auto&& js_class : _processing_data_list) {
+
         /* Поиск среди неотработавших модулей */
         for (auto&& module : _module_list) {
             if (module->used()) { continue; }
@@ -63,7 +64,7 @@ void WcpModuleController::processRecursively()
                             { "name" , it.key() }
                             , { "object_array1d", it.value() }
                         };
-                        _processing_data_list.push_back(answer_elem);
+                        _processing_data_list.push_back(js_resulting_class);
                     }
 
                     /* Попытка обработать полученный ответ другими модулями */

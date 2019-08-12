@@ -146,7 +146,7 @@ protected:
 
     }
 
-    virtual void onProcess(const nlohmann::json input_object_array2d) = 0;
+    virtual void onProcess(const nlohmann::json input_object_array1d) = 0;
     virtual void onSetCallback(uint64_t func_pointer) {
         _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
         registerController();
