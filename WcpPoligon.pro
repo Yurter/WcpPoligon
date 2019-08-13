@@ -4,17 +4,17 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        module_controller/WcpModuleController.cpp \
+        module_system/module_controller/WcpModuleController.cpp \
         main.cpp \
-        module_manager/WcpModuleHandler.cpp \
-        module_manager/WcpModuleManager.cpp
+        module_system/module_manager/WcpModuleHandler.cpp \
+        module_system/module_manager/WcpModuleManager.cpp
 
 HEADERS += \
-    module/WcpModuleUtils.hpp \
-    module_controller/WcpModuleController.hpp \
-    module/WcpAbstractModule.hpp \
-    module_manager/WcpModuleHandler.hpp \
-    module_manager/WcpModuleManager.hpp
+    module_system/module/WcpModuleUtils.hpp \
+    module_system/module_controller/WcpModuleController.hpp \
+    module_system/module/WcpAbstractModule.hpp \
+    module_system/module_manager/WcpModuleHandler.hpp \
+    module_system/module_manager/WcpModuleManager.hpp
 
 #nlohmann::json
 INCLUDEPATH += D:\dev\

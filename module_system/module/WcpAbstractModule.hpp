@@ -84,13 +84,13 @@ protected:
      * * На вход:
      * {
      *      "action"     : String,    ex.: "process"
-     *      "object_array2d" : Array      ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
+     *      "object_array2d" : Array  ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
      *                                ex. 2: [ car_0, car_1, car_2, ... car_N ]       Распознание автомобильных номеров
      * }
      * * На выход:
      * {
      *      "status"     : String,    ex.: "success"/"failed"
-     *      "object_array2d" : Array      ex. 1: [ "cat" : cat_array, "dog" : dog_array, ... "smth" : smth_array ] Мультиобъектный детектор
+     *      "object_array2d" : Array  ex. 1: [ "cat" : cat_array, "dog" : dog_array, ... "smth" : smth_array ] Мультиобъектный детектор
      *                                ex. 2: [ "face" : face_array ]                                           Монообъектный детектор
      * }
     **/
@@ -180,6 +180,7 @@ protected:
         nlohmann::json resulting_object;
         resulting_object[obj_name] = jsobj_value;
         saveResultingObject(resulting_object);
+//        saveResultingObject(jsobj_value);
     }
 
 private:

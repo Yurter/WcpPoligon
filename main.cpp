@@ -6,9 +6,22 @@
 
 #define WEB_CAMERA 0
 
+static uint64_t id = 1;
+
 static CallbackFunc callback_func = [](nlohmann::json request, nlohmann::json& response) {
     std::cout << "callback_func: " << request << std::endl;
-    UNUSED(response)
+
+    if (request["action"] == "register") {
+        nlohmann::json objects_uid;
+
+        for (std::string class_name : request["object_list"]) {
+            nlohmann::json jsclass_uid;
+            jsclass_uid[class_name] = uint64_t((id++ + 3) * 2);
+            objects_uid.push_back(jsclass_uid);
+        }
+
+        response["objects_uid"] = objects_uid;
+    }
 };
 
 int main()
@@ -24,7 +37,7 @@ int main()
     /* Инициализация менеджера модулей */
     WcpModuleManager module_maneger("D:\\dev\\WcpPoligon\\plugins");
     for (auto&& module : module_maneger.availableModules()) {
-//        std::cout << "available module: " << module << std::endl;
+        std::cout << "available module: " << module << std::endl;
     }
     std::cout << std::endl;
     try {
@@ -52,9 +65,11 @@ int main()
                 if (frame_counter % 40 == 0) {
                     auto result = module_controller.propagateImage(source_image);
 
+                    std::cout << "result: " << result << std::endl;
                     int ii = 0;
                     for (auto&& elem : result) {
-                        std::cout << "| " << ii++ << " | " << elem.begin().key() << std::endl;
+//                        std::cout << "| " << ii++ << " | " << elem.begin().key() << " : " << elem.begin().value().size() << std::endl;
+                        std::cout << "| " << ii++ << " | " << elem["name"] << " : " << elem["object_array1d"].size() << std::endl;
                     }
                     std::cout << "===========================================" << std::endl;
                 }

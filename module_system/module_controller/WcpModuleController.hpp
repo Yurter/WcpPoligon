@@ -13,8 +13,11 @@ public:
     WcpModuleController() = default;
     ~WcpModuleController() = default;
 
-    /* Метод добавляет модуль в кучу перед инициализацией графа */
+    /* Метод добавляет модуль в кучу */
     void                add(WcpAbstractModule* module);
+
+    /* Метод исключает модуль из кучи */
+//    void                remove(WcpAbstractModule* module);
 
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     nlohmann::json      propagateImage(cv::Mat image);
