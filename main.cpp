@@ -1,8 +1,8 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
-#include "module_manager/WcpModuleManager.hpp"
-#include "module_controller/WcpModuleController.hpp"
+#include "module_system/module_manager/WcpModuleManager.hpp"
+#include "module_system/module_controller/WcpModuleController.hpp"
 
 #define WEB_CAMERA 0
 
@@ -46,9 +46,9 @@ int main()
 
     /* Построение графа из модулей для текущей камеры */
     WcpModuleController module_controller;
-    for (auto&& module_handler : *module_maneger.handlerList()) {
-        module_controller.add(module_handler.module());
-    }
+//    for (auto&& module_handler : *module_maneger.handlerList()) {
+//        module_controller.add(module_handler.module());
+//    }
 
     /* Устанвока сallback-функции */
     module_controller.setCallbackFunc(callback_func);

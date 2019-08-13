@@ -15,19 +15,39 @@ WcpModuleManager::~WcpModuleManager()
     }
 }
 
-StringList WcpModuleManager::availableModules() const
+HeaderList WcpModuleManager::availableModules()
 {
-    return getFileNameList(_module_path, "dll");
+    HeaderList header_list;
+    for (auto&& dll_handler : _handler_list) {
+        header_list.push_back(dll_handler.header());
+    }
+    return header_list;
 }
 
-HandlerList* WcpModuleManager::handlerList()
+WcpAbstractModule* WcpModuleManager::createModule(WcpModuleHeader* module_header)
 {
-    return &_handler_list;
+    auto dll_handler = std::find_if(_handler_list.begin(), _handler_list.end(), [module_header](WcpModuleHandler handler){
+            return handler.header() == module_header;
+    });
+    if (dll_handler == _handler_list.end()) {
+        std::string err_msg = std::string("Failed to find dll handler by header: ") + module_header->name();
+        throw std::exception(err_msg.c_str());
+    }
+    return callDllFunction<CreateModuleFunc,WcpAbstractModule*>(*dll_handler, "createModule");
 }
 
 void WcpModuleManager::load()
 {
+    /* Загружаются все найденые в директории dll */
     for (auto&& dll_name : getFileNameList(_module_path, "dll")) {
+        /* Поиск среди ранее загруженных dll по имени файла */
+        auto ret = std::find_if(_handler_list.begin(), _handler_list.end(), [dll_name](WcpModuleHandler handler){
+                return handler.dllName() == dll_name;
+        });
+
+        /* Если dll уже загружена, переход к следующему имени dll */
+        if (ret == _handler_list.end()) { continue; }
+
         /* Попытка загрузить dll */
         std::wstring wstr(dll_name.begin(), dll_name.end());
         HINSTANCE h_instance = ::LoadLibrary(wstr.c_str());
@@ -36,25 +56,16 @@ void WcpModuleManager::load()
             throw std::exception(err_msg.c_str());
         }
 
-        /* Попытка получить указатель на функцию создания модуля */
-        CreateModuleFunc create_func = CreateModuleFunc(::GetProcAddress(HMODULE(h_instance), "createModule"));
-        if (create_func == nullptr) {
-            std::string err_msg = "Failed to get a create_func: " + dll_name;
-            throw std::exception(err_msg.c_str());
-        }
-
-        /* Попытка создать объект модуля */
-        auto module = create_func();
-        if (module == nullptr) {
-            std::string err_msg = "Failed to creat module: " + dll_name;
-            throw std::exception(err_msg.c_str());
-        }
-
-        /* Добавление модуля и его хендлера в список */
-        _handler_list.push_back({ h_instance, dll_name, module });
+        /* Добавление хендлера dll в список */
+        _handler_list.push_back({ h_instance, dll_name });
 
         /* Лог */
         std::cout << "Loaded: " << dll_name << std::endl;
+    }
+
+    /* Чтение заголовков загруженных модулей */
+    for (auto&& dll_handler : _handler_list) {
+        readHeader(dll_handler);
     }
 }
 
@@ -87,4 +98,10 @@ StringList WcpModuleManager::getFileNameList(std::string path, std::string exten
     }
 
     return dll_list;
+}
+
+void WcpModuleManager::readHeader(WcpModuleHandler& dll_handler)
+{
+    auto header = callDllFunction<CreateHeaderFunc,WcpModuleHeader*>(dll_handler, "readHeader");
+    dll_handler.setHeadet(header);
 }

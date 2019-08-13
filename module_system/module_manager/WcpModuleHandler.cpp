@@ -1,11 +1,10 @@
 #include "WcpModuleHandler.hpp"
 
 WcpModuleHandler::WcpModuleHandler(HINSTANCE h_instance
-                                   , std::string dll_name
-                                   , WcpAbstractModule* module) :
+                                   , std::string dll_name) :
     _h_instance(h_instance)
   , _dll_name(dll_name)
-  , _module(module)
+  , _header(nullptr)
 {
     //
 }
@@ -20,7 +19,12 @@ std::string WcpModuleHandler::dllName() const
     return _dll_name;
 }
 
-WcpAbstractModule* WcpModuleHandler::module()
+WcpModuleHeader* WcpModuleHandler::header() const
 {
-    return _module;
+    return _header;
+}
+
+void WcpModuleHandler::setHeadet(WcpModuleHeader* header)
+{
+    _header = header;
 }

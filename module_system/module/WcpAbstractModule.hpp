@@ -3,25 +3,14 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include "WcpModuleUtils.hpp"
+#include "WcpModuleHeader.hpp"
 
 #define WCP_DLL_EXPORT __declspec(dllexport)
-
-/* Тип модуля определяет область в которой определено его поведение */
-enum ModuleType {
-    MotionDetector,     /* Детекция движения на основе последовательности кадров        */
-    ObjectDetector,     /* Детекция и классификация объектов на изображении             */
-    Recognition,        /* Распознание объектов на изображении (лица, текст)            */
-    Tracking,           /* Слежение за объектом в последовательности кадров на видео    */
-    Helper,             /* Модуль модифицирует изображение, не сообщает метаинформации  */
-    Logic               /* Сбор и анализ данных, полученных от других модулей           */
-};
 
 /* Callback-функция для выполнения запросов из модуля */
 using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
 
-using StringList = std::list<std::string>;
-
-#define throw_exception(msg) throw std::exception(std::string(_name + " : " + std::string(msg)).c_str())
+#define throw_exception(msg) throw std::exception(std::string(std::string(_header.name()) + " : " + std::string(msg)).c_str())
 #define UNUSED(x) (void)x;
 
 /* Класс описывает виртуальный интерфейс для наследующих его модулей */
@@ -30,27 +19,8 @@ class /*WCP_DLL_EXPORT*/ WcpAbstractModule
 
 public:
 
-    WcpAbstractModule(ModuleType type                   /* Реализуемый тип модуля                                       */
-                      , std::string name                /* Имя модуля в произвольной форме, отображается пользователю   */
-                      , std::string workname            /* Имя модуля в уникальной, лаконичной, неизменной от версии к  *
-                                                         * версии форме, используется в качестве:                       *
-                                                         * 1. метки при хранении данных модуля во внешнем постоянном    *
-                                                         * хранилище;                                                   *
-                                                         * 2. имени индивидуальной для кажого модуля директорей, в      *
-                                                         * которой находятся dll файл и необходимые для работы файлы    *
-                                                         * 3. имени контроллера для сетевого взаимодейтсвия             */
-                      , std::string version             /* Версия модуля в формате чисел разделенных точками            */
-                      , std::string explicit_dependence /* Имя желаемого объекта, который модуль может обработать       */
-                      , std::string implicit_dependence /* Имя допустимого объекта, который модуль может обработать     */
-                      , StringList  result_object_list  /* ? */
-                      ) :
-        _type(type)
-      , _name(name)
-      , _workname(workname)
-      , _version(version)
-      , _implicit_dependence(implicit_dependence)
-      , _explicit_dependence(explicit_dependence)
-      , _result_object_list(result_object_list)
+    WcpAbstractModule(WcpModuleHeader header) :
+        _header(header)
       , _callback_func(nullptr)
       , _objects_uid(0)
       , _used(false)
@@ -61,13 +31,8 @@ public:
 
     virtual ~WcpAbstractModule() = default;
 
-    int                 type()                  const { return _type;                           }
-    const char*         name()                  const { return _name.c_str();                   }
-    const char*         version()               const { return _version.c_str();                }
-    const char*         implicitDependence()    const { return _implicit_dependence.c_str();    }
-    const char*         explicitDependence()    const { return _explicit_dependence.c_str();    }
-    bool                used()                  const { return _used;                           }
-
+    WcpModuleHeader*    header() { return &_header; }
+    bool                used() const { return _used; }
     void                setUsed(bool used) { _used = used; }
 
     /* Си интерфейс для метода process(const nlohmann::json input_data, nlohmann::json& output_data) : void */
@@ -201,7 +166,7 @@ private:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _workname;
+        request["module"] = _header.workname();
         request["action"] = "load";
         _callback_func(request, response);
         _module_data = response;
@@ -213,7 +178,7 @@ private:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _workname;
+        request["module"] = _header.workname();
         request["action"] = "save";
         request["data"] = _module_data;
         _callback_func(request, response);
@@ -225,9 +190,9 @@ private:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _workname;
+        request["module"] = _header.workname();
         request["action"] = "register";
-        request["object_list"] = _result_object_list;
+        request["object_list"] = _header.resultObjectList();
         _callback_func(request, response);
 
         if (WcpModuleUtils::ckeckJsonField(response, "objects_uid", JsDataType::array) == false) {
@@ -243,7 +208,7 @@ private:
         }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _workname;
+        request["module"] = _header.workname();
         request["action"] = "save_object";
         request["object"] = jsobject;
         _callback_func(request, response);
@@ -252,13 +217,7 @@ private:
 private:
 
     /* Метаданные */
-    ModuleType          _type;
-    std::string         _name;
-    std::string         _workname;
-    std::string         _version;
-    std::string         _implicit_dependence;
-    std::string         _explicit_dependence;
-    StringList          _result_object_list;
+    WcpModuleHeader     _header;
 
     /* Вспомогательные члены класса */
     CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */

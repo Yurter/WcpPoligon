@@ -29,7 +29,7 @@ void WcpModuleController::setCallbackFunc(CallbackFunc callback_func)
     for (auto&& module : _module_list) {
        auto module_answer = nlohmann::json::parse(module->process(js_set_callback.dump().c_str()));
        if (module_answer["status"] == "failed") {
-           std::string err_msg = "Failed to callback_func to module: " + std::string(module->name());
+           std::string err_msg = "Failed to callback_func to module: " + std::string(module->header()->name());
            throw std::exception(err_msg.c_str());
        }
     }
@@ -46,7 +46,7 @@ void WcpModuleController::processRecursively()
 
             /* Если в куче содержится поле со значением - массивом объектов,
              * которое может обработать один из модулей, передаем его ему */
-            if (js_class["name"] == std::string(module->explicitDependence())) {
+            if (js_class["name"] == std::string(module->header()->explicitDependence())) {
                 module->setUsed(true); /* Исключение повторного использования модуля */
 
                 /* Формирование входных данных */
