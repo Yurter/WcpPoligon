@@ -4,11 +4,15 @@
 #include <opencv2/imgcodecs.hpp>
 #include "WcpModuleUtils.hpp"
 #include "WcpModuleHeader.hpp"
+#include "AsyncQueue.hpp"
+#include <thread>
 
 #define WCP_DLL_EXPORT __declspec(dllexport)
 
 /* Callback-функция для выполнения запросов из модуля */
 using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
+
+using ObjectQueue = AsyncQueue<nlohmann::json>;
 
 #define throw_exception(msg) throw std::exception(std::string(std::string(_header.name()) + " : " + std::string(msg)).c_str())
 #define UNUSED(x) (void)x;
@@ -23,17 +27,27 @@ public:
         _header(header)
       , _callback_func(nullptr)
       , _objects_uid(0)
-      , _used(false)
-    { }
+      , _running(false)
+    {
+        _running = true;
+        _thread = std::thread([this]() {
+            while (_running) {
+                nlohmann::json object;
+                guaranteed_pop(_object_queue, object);
+                onProcess(object);
+            }
+        });
+    }
+
+    virtual ~WcpAbstractModule() {
+        _running = false;
+        _thread.join();
+    }
 
     WcpAbstractModule(WcpAbstractModule&) = delete;
     WcpAbstractModule(WcpAbstractModule&&) = delete;
 
-    virtual ~WcpAbstractModule() = default;
-
-    WcpModuleHeader*    header() { return &_header; }
-    bool                used() const { return _used; }
-    void                setUsed(bool used) { _used = used; }
+    WcpModuleHeader* header() { return &_header; }
 
     /* Си интерфейс для метода process(const nlohmann::json input_data, nlohmann::json& output_data) : void */
     [[nodiscard]] const char* process(const char* input_data) {
@@ -45,20 +59,6 @@ public:
 
 protected:
 
-    /* Требования к формату данных:
-     * * На вход:
-     * {
-     *      "action"     : String,    ex.: "process"
-     *      "object_array2d" : Array  ex. 1: [ face_0, face_1, face_2, ... face_N ]   Распознание лиц
-     *                                ex. 2: [ car_0, car_1, car_2, ... car_N ]       Распознание автомобильных номеров
-     * }
-     * * На выход:
-     * {
-     *      "status"     : String,    ex.: "success"/"failed"
-     *      "object_array2d" : Array  ex. 1: [ "cat" : cat_array, "dog" : dog_array, ... "smth" : smth_array ] Мультиобъектный детектор
-     *                                ex. 2: [ "face" : face_array ]                                           Монообъектный детектор
-     * }
-    **/
     void process(const nlohmann::json input_data, nlohmann::json& output_data) {
 
         if (WcpModuleUtils::ckeckJsonField(input_data, "action", JsDataType::string) == false) {
@@ -67,23 +67,18 @@ protected:
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (input_data["action"] == "process") {
-            if (WcpModuleUtils::ckeckJsonField(input_data, "object_array1d", JsDataType::array) == false) {
-                throw_exception("invalid or missing \"object_array1d\" field in input data");
+            if (WcpModuleUtils::ckeckJsonField(input_data, "object", JsDataType::array) == false) {
+                throw_exception("invalid or missing \"object\" field in input data");
             }
 
-            nlohmann::json input_object_array1d = input_data["object_array1d"];
-            nlohmann::json output_object_array2d;
-            onProcess(input_object_array1d);
-
-            output_object_array2d = dumpObjects();
-
-            if (output_object_array2d.empty()) {
+            nlohmann::json object = input_data["object"];
+            if (!_object_queue.push(object)) {
                 output_data["status"] = "failed";
+                output_data["error"] = "the queue is full";
                 return;
             }
 
             output_data["status"] = "success";
-            output_data["object_array2d"] = output_object_array2d;
             return;
         }
 
@@ -111,7 +106,7 @@ protected:
 
     }
 
-    virtual void onProcess(const nlohmann::json input_object_array1d) = 0;
+    virtual void onProcess(const nlohmann::json object) = 0;
     virtual void onSetCallback(uint64_t func_pointer) {
         _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
         registerController();
@@ -144,8 +139,7 @@ protected:
         /* Запсись полученного объекта в базу данных */
         nlohmann::json resulting_object;
         resulting_object[obj_name] = jsobj_value;
-        saveResultingObject(resulting_object);
-//        saveResultingObject(jsobj_value);
+        sendResultingObject(resulting_object);
     }
 
 private:
@@ -202,14 +196,14 @@ private:
         _objects_uid = WcpModuleUtils::arrayToObject(objects_uid_array);
     }
 
-    void saveResultingObject(nlohmann::json jsobject) {
+    void sendResultingObject(nlohmann::json jsobject) {
         if (_callback_func == nullptr) {
             throw_exception("Callback function is null");
         }
         nlohmann::json request;
         nlohmann::json response;
         request["module"] = _header.workname();
-        request["action"] = "save_object";
+        request["action"] = "send";
         request["object"] = jsobject;
         _callback_func(request, response);
     }
@@ -219,14 +213,17 @@ private:
     /* Метаданные */
     WcpModuleHeader     _header;
 
+    ObjectQueue         _object_queue;
+
     /* Вспомогательные члены класса */
     CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
     nlohmann::json      _objects_uid;       /* UID объекта в контексте моудуля                                      */
     std::string         _json_dump_buffer;  /* Возвращаемый указатель метода process(const char* input_data)        *
                                              * ссылается на содержмиое этой строки                                  */
-    bool                _used;              /* Флаг, не позволяющий повтроное использование модуля в контексте      *
-                                             * одной итерации обработки изображения                                 */
     nlohmann::json      _stashed_objects;   /* Буффер результирующих объектов                                       */
     nlohmann::json      _module_data;       /* Копия произвольных данных модуля, хранящихся во внешнем хранилище    */
+
+    std::thread         _thread;
+    volatile bool       _running;
 
 };

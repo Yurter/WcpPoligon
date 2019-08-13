@@ -51,7 +51,7 @@ int main()
 //    }
 
     /* Устанвока сallback-функции */
-    module_controller.setCallbackFunc(callback_func);
+//    module_controller.setCallbackFunc(callback_func);
 
     try {
         { /* Основной цикл */
@@ -63,14 +63,14 @@ int main()
                 static int frame_counter = 0; /* Отладочный пропуск кадров для легкого чтения лога */
                 frame_counter++;
                 if (frame_counter % 40 == 0) {
-                    auto result = module_controller.propagateImage(source_image);
+//                    module_controller.propagateImage(source_image);
 
-                    std::cout << "result: " << result << std::endl;
-                    int ii = 0;
-                    for (auto&& elem : result) {
-//                        std::cout << "| " << ii++ << " | " << elem.begin().key() << " : " << elem.begin().value().size() << std::endl;
-                        std::cout << "| " << ii++ << " | " << elem["name"] << " : " << elem["object_array1d"].size() << std::endl;
-                    }
+//                    std::cout << "result: " << result << std::endl;
+//                    int ii = 0;
+//                    for (auto&& elem : result) {
+////                        std::cout << "| " << ii++ << " | " << elem.begin().key() << " : " << elem.begin().value().size() << std::endl;
+//                        std::cout << "| " << ii++ << " | " << elem["name"] << " : " << elem["object_array1d"].size() << std::endl;
+//                    }
                     std::cout << "===========================================" << std::endl;
                 }
 

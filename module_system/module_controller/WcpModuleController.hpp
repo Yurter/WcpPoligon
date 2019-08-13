@@ -2,6 +2,8 @@
 #include "../module/WcpAbstractModule.hpp"
 
 using ModuleList = std::list<WcpAbstractModule*>;
+using ImageList = std::list<cv::Mat>;
+using ImageQueue = AsyncQueue<cv::Mat>;
 
 /* Класс принимает изображение, которое обрабатывается
  * множеством переданных ему модулей */
@@ -10,8 +12,8 @@ class WcpModuleController
 
 public:
 
-    WcpModuleController() = default;
-    ~WcpModuleController() = default;
+    WcpModuleController();
+    ~WcpModuleController();
 
     /* Метод добавляет модуль в кучу */
     void                add(WcpAbstractModule* module);
@@ -20,24 +22,32 @@ public:
 //    void                remove(WcpAbstractModule* module);
 
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
-    nlohmann::json      propagateImage(cv::Mat image);
+    void                processImage(cv::Mat cvimage);
 
-    /* Метод устанавливает всем модулям сallback-функцию */
-    void                setCallbackFunc(CallbackFunc callback_func);
 
 private:
 
-    void                processRecursively();
+    /* Метод устанавливает всем модулям сallback-функцию */
+    void                setCallbackFunc(WcpAbstractModule* module);
 
-    void                createSourceObject();
-    void                resetModules();
+    void                propagateObject(nlohmann::json object);
+
+    void                processRecursively(nlohmann::json object_row);
+
+    void                callbackFunc(nlohmann::json request, nlohmann::json& response);
 
 private:
 
     ModuleList          _module_list; /* Список всех модулей, участвующих в обработке изображения */
 
-    nlohmann::json      _processing_data_list;  /* Массив результатов обработки модулей */
-    cv::Mat             _processing_image;      /* Обрабатываемое изображение           */
+    std::mutex          _data_mutex;
+    nlohmann::json      _data_list;  /* Массив результатов обработки модулей */
+    ImageList           _image_list; /* Список обрабатываемых изображений */
+
+    std::mutex          _heap_mutex;
+    nlohmann::json      _heap;
+
+    std::thread         _thread;
+    volatile bool       _running;
 
 };
-

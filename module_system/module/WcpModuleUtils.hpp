@@ -78,10 +78,8 @@ public:
     }
 
     /* ? */
-    static nlohmann::json imageToJson(cv::Mat& cvimage) {
-        nlohmann::json jsimage;
-        jsimage["image"] = reinterpret_cast<uint64_t>(&cvimage);
-        return jsimage;
+    static uint64_t imageToJson(cv::Mat& cvimage) {
+        return reinterpret_cast<uint64_t>(&cvimage);
     }
 
     /* ? */
@@ -91,6 +89,21 @@ public:
         cv::Mat cvimage = cv::Mat(*image);
         return cvimage;
     }
+
+//    /* ? */
+//    static nlohmann::json imageToJson(cv::Mat& cvimage) {
+//        nlohmann::json jsimage;
+//        jsimage["image"] = reinterpret_cast<uint64_t>(&cvimage);
+//        return jsimage;
+//    }
+
+//    /* ? */
+//    static cv::Mat jsonToImage(nlohmann::json jsimage) {
+//        uint64_t image_ptr = jsimage;
+//        cv::Mat* image = reinterpret_cast<cv::Mat*>(image_ptr);
+//        cv::Mat cvimage = cv::Mat(*image);
+//        return cvimage;
+//    }
 
     /* ? */
     static nlohmann::json arrayToObject(nlohmann::json jsarray) {
@@ -109,6 +122,17 @@ public:
             jsarray.push_back(item);
         }
         return jsarray;
+    }
+
+    /* ? */
+    template<typename cvRect>
+    static cvRect fixRect(cvRect normalized_rect, cv::Mat& cvimage) {
+        return {
+            cvimage.cols * normalized_rect.x
+            , cvimage.rows * normalized_rect.y
+            , cvimage.cols * normalized_rect.width
+            , cvimage.rows * normalized_rect.height
+        };
     }
 
 

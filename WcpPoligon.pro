@@ -10,6 +10,7 @@ SOURCES += \
         module_system/module_manager/WcpModuleManager.cpp
 
 HEADERS += \
+    module_system/module/AsyncQueue.hpp \
     module_system/module/WcpModuleHeader.hpp \
     module_system/module/WcpModuleUtils.hpp \
     module_system/module_controller/WcpModuleController.hpp \

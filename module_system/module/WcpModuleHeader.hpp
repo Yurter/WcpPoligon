@@ -43,7 +43,7 @@ public:
       , _result_object_list(result_object_list)
     { }
 
-    ~WcpModuleHeader();
+    ~WcpModuleHeader() = default;
 
     int                 type()                  const { return _type;                           }
     const char*         name()                  const { return _name.c_str();                   }
@@ -52,7 +52,6 @@ public:
     const char*         implicitDependence()    const { return _implicit_dependence.c_str();    }
     const char*         explicitDependence()    const { return _explicit_dependence.c_str();    }
     StringList          resultObjectList()      const { return _result_object_list;             }
-
 
 private:
 
