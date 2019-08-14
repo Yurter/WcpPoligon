@@ -1,4 +1,5 @@
 #pragma once
+#include "../WcpHeader.hpp"
 #include <json.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -6,26 +7,28 @@
 #include "WcpModuleHeader.hpp"
 #include "AsyncQueue.hpp"
 #include <thread>
-
-#define WCP_DLL_EXPORT __declspec(dllexport)
+#include <atomic>
 
 /* Callback-функция для выполнения запросов из модуля */
-using CallbackFunc = void(*)(uint64_t ctrl_ptr, nlohmann::json request, nlohmann::json& response);
+//using CallbackFunc = void(*)(uint64_t ctrl_ptr, nlohmann::json request, nlohmann::json& response);
+//using Callback = void(*)(nlohmann::json request, nlohmann::json& response);
+//using CallbackFunc = std::function<Callback>;
+
+using CallbackFunc = std::function<void(nlohmann::json,nlohmann::json&)>;
 
 using ObjectQueue = AsyncQueue<nlohmann::json>;
 
-#define throw_exception(msg) throw std::exception(std::string(std::string(_header.name()) + " : " + std::string(msg)).c_str())
+#define throw_exception(msg) throw std::exception(std::string(std::string(_header->name()) + " : " + std::string(msg)).c_str())
 #define UNUSED(x) (void)x;
 
 /* Класс описывает виртуальный интерфейс для наследующих его модулей */
-class /*WCP_DLL_EXPORT*/ WcpAbstractModule
+class WCP_DLL_EXPORT WcpAbstractModule
 {
 
 public:
 
-    WcpAbstractModule(WcpModuleHeader header) :
+    WcpAbstractModule(WcpModuleHeader* header) :
         _header(header)
-      , _callback_func(nullptr)
       , _objects_uid(0)
       , _running(false)
     {
@@ -37,6 +40,7 @@ public:
                 onProcess(object);
             }
         });
+        _thread.detach();
     }
 
     virtual ~WcpAbstractModule() {
@@ -47,7 +51,7 @@ public:
     WcpAbstractModule(WcpAbstractModule&) = delete;
     WcpAbstractModule(WcpAbstractModule&&) = delete;
 
-    WcpModuleHeader* header() { return &_header; }
+    WcpModuleHeader* header() { return _header; }
 
     /* Си интерфейс для метода process(const nlohmann::json input_data, nlohmann::json& output_data) : void */
     [[nodiscard]] const char* process(const char* input_data) {
@@ -72,6 +76,12 @@ protected:
             }
 
             nlohmann::json object = input_data["object"];
+
+            /* Проверка адреса отправителя объекта */
+            if (WcpModuleUtils::ckeckJsonField(object, "ctrl_ptr", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"ctrl_ptr\" field in object");
+            }
+
             if (!_object_queue.push(object)) {
                 output_data["status"] = "failed";
                 output_data["error"] = "the queue is full";
@@ -83,14 +93,22 @@ protected:
         }
 
         if (input_data["action"] == "set_callback") {
-            if (WcpModuleUtils::ckeckJsonField(input_data, "callback_func", JsDataType::number_unsigned) == false) {
-                throw_exception("invalid or missing \"callback_func\" field in input data");
-            }
             if (WcpModuleUtils::ckeckJsonField(input_data, "ctrl_ptr", JsDataType::number_unsigned) == false) {
                 throw_exception("invalid or missing \"ctrl_ptr\" field in input data");
             }
-
+            if (WcpModuleUtils::ckeckJsonField(input_data, "callback_func", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"callback_func\" field in input data");
+            }
             onSetCallback(input_data["ctrl_ptr"], input_data["callback_func"]);
+            output_data["status"] = "success";
+            return;
+        }
+
+        if (input_data["action"] == "remove_callback") {
+            if (WcpModuleUtils::ckeckJsonField(input_data, "ctrl_ptr", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"ctrl_ptr\" field in input data");
+            }
+            onRemoveCallback(input_data["ctrl_ptr"]);
             output_data["status"] = "success";
             return;
         }
@@ -114,6 +132,10 @@ protected:
         _callback_list[ctrl_pointer] = func_pointer;
         registerController();
         loadData();
+    }
+    virtual void onRemoveCallback(uint64_t ctrl_pointer) {
+        saveData();
+        _callback_list.erase(ctrl_pointer);
     }
     virtual void onAction(const std::string action, const nlohmann::json input_object_array2d) {
         UNUSED(action) UNUSED(input_object_array2d)
@@ -147,50 +169,42 @@ protected:
 
 private:
 
-    /* Метод вызывается внутри реализации onProcess при завршении обработки входных данных и формировании ответа */
-    nlohmann::json dumpObjects() {
-        /* Преобразование полей json-объекта в массив */
-        auto jsdump = WcpModuleUtils::objectToArray(_stashed_objects);
-        _stashed_objects.clear();
-        return jsdump;
-    }
-
     /* Модуль может использовать постоянное внешнее хранилище данных, содержимое которого
      * хранится в произваольной форме. Запись и чтение происходит со всей информацией разом */
     void loadData() {
-        if (_callback_func == nullptr) {
-            throw_exception("Callback function is null");
-        }
+//        if (_callback_func == nullptr) {
+//            throw_exception("Callback function is null");
+//        }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _header.workname();
+        request["module"] = _header->workname();
         request["action"] = "load";
-        _callback_func(request, response);
+//        _callback_func(request, response);
         _module_data = response;
     }
 
     void saveData() {
-        if (_callback_func == nullptr) {
-            throw_exception("Callback function is null");
-        }
+//        if (_callback_func == nullptr) {
+//            throw_exception("Callback function is null");
+//        }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _header.workname();
+        request["module"] = _header->workname();
         request["action"] = "save";
         request["data"] = _module_data;
-        _callback_func(request, response);
+//        _callback_func(request, response);
     }
 
     void registerController() {
-        if (_callback_func == nullptr) {
-            throw_exception("Callback function is null");
-        }
+//        if (_callback_func == nullptr) {
+//            throw_exception("Callback function is null");
+//        }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _header.workname();
+        request["module"] = _header->workname();
         request["action"] = "register";
-        request["object_list"] = _header.resultObjectList();
-        _callback_func(request, response);
+        request["object_list"] = _header->resultObjectList();
+//        _callback_func(request, response);
 
         if (WcpModuleUtils::ckeckJsonField(response, "objects_uid", JsDataType::array) == false) {
             throw_exception("invalid or missing \"objects_uid\" field in response");
@@ -200,27 +214,26 @@ private:
     }
 
     void sendResultingObject(nlohmann::json jsobject) {
-        if (_callback_func == nullptr) {
-            throw_exception("Callback function is null");
-        }
+//        if (_callback_func == nullptr) {
+//            throw_exception("Callback function is null");
+//        }
         nlohmann::json request;
         nlohmann::json response;
-        request["module"] = _header.workname();
-        request["action"] = "send";
+        request["module"] = _header->workname();
+        request["action"] = "commit";
         request["object"] = jsobject;
-        _callback_func(request, response);
+//        _callback_func(request, response);
     }
 
 private:
 
     /* Метаданные */
-    WcpModuleHeader     _header;
+    WcpModuleHeader*    _header;
 
     ObjectQueue         _object_queue;
 
     /* Вспомогательные члены класса */
-    nlohmann::json      _callback_list;
-//    CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
+    nlohmann::json      _callback_list;     /* Связь от модуля к ядру                                               */
     nlohmann::json      _objects_uid;       /* UID объекта в контексте моудуля                                      */
     std::string         _json_dump_buffer;  /* Возвращаемый указатель метода process(const char* input_data)        *
                                              * ссылается на содержмиое этой строки                                  */
@@ -228,6 +241,6 @@ private:
     nlohmann::json      _module_data;       /* Копия произвольных данных модуля, хранящихся во внешнем хранилище    */
 
     std::thread         _thread;
-    volatile bool       _running;
+    std::atomic_bool    _running;
 
 };

@@ -3,10 +3,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <iostream>
+#include "../WcpHeader.hpp"
 
 using JsDataType = nlohmann::detail::value_t;
 
-class WcpModuleUtils
+class WCP_DLL_EXPORT WcpModuleUtils
 {
 
 public:

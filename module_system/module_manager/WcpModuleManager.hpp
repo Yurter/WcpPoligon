@@ -10,13 +10,16 @@ using CreateModuleFunc = WcpAbstractModule*(*)(void);
 using CreateHeaderFunc = WcpModuleHeader*(*)(void);
 
 /* Класс загружает и выгружает модули из dll файлов в указанной директории */
-class WcpModuleManager
+class WCP_DLL_EXPORT WcpModuleManager
 {
 
 public:
 
-    WcpModuleManager(std::string module_path);
+    WcpModuleManager(const char *module_path);
     ~WcpModuleManager();
+
+    WcpModuleManager(WcpModuleManager&) = delete;
+    WcpModuleManager(WcpModuleManager&&) = delete;
 
     /* Метод возвращает список заголовков модулей, доступных для создания */
     HeaderList          availableModules();

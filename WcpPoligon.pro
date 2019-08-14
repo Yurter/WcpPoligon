@@ -1,4 +1,5 @@
 TEMPLATE = app
+#TEMPLATE = lib
 CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
@@ -16,7 +17,8 @@ HEADERS += \
     module_system/module_controller/WcpModuleController.hpp \
     module_system/module/WcpAbstractModule.hpp \
     module_system/module_manager/WcpModuleHandler.hpp \
-    module_system/module_manager/WcpModuleManager.hpp
+    module_system/module_manager/WcpModuleManager.hpp \
+    module_system/WcpHeader.hpp
 
 #nlohmann::json
 INCLUDEPATH += D:\dev\
@@ -28,3 +30,5 @@ LIBS += -LD:\dev\00_opencv\410\build\x64\vc15\lib
 LIBS += -LD:\dev\00_opencv\410\build\x64\vc15\bin
 LIBS += -lopencv_world410   #release
 LIBS += -lopencv_world410d  #debug
+
+DEFINES += WCP_MAIN

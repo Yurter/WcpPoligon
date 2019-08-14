@@ -1,4 +1,5 @@
 #pragma once
+#include "../WcpHeader.hpp"
 #include <string>
 #include <list>
 
@@ -15,7 +16,7 @@ enum ModuleType {
 using StringList = std::list<std::string>;
 
 /* Класс содержит в себе метаиинформацию о модуле */
-class WcpModuleHeader
+class WCP_DLL_EXPORT WcpModuleHeader
 {
 
 public:
@@ -42,6 +43,9 @@ public:
       , _explicit_dependence(explicit_dependence)
       , _result_object_list(result_object_list)
     { }
+
+    WcpModuleHeader(WcpModuleHeader&) = delete;
+    WcpModuleHeader(WcpModuleHeader&&) = delete;
 
     ~WcpModuleHeader() = default;
 

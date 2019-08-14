@@ -5,41 +5,13 @@
 WcpModuleController::WcpModuleController() :
     _running(false)
 {
-    _running = true;
-    _thread = std::thread([this]() {
-        while (_running) {
-            std::lock_guard<std::mutex> lock(_heap_mutex);
-            for (auto&& object : _heap) {
-                propagateObject(object);
-            }
-            _heap.clear();
-        }
-    });
-
-    _callback_func = [](uint64_t ctrl_ptr, nlohmann::json request, nlohmann::json& response){
-        auto this_ptr = reinterpret_cast<WcpModuleController*>(ctrl_ptr);
-        this_ptr->callbackFunc(request, response);
-    };
+    createCallbackFunc();
+    startProcessing();
 }
-//{
-//    _running = true;
-//    _thread = std::thread([this]() {
-//        while (_running) {
-//            _data_mutex.lock();
-//            auto data_list_copy = _data_list;
-//            _data_list.clear();
-//            _data_mutex.unlock();
-//            for (auto&& row : data_list_copy) {
-//                processRecursively(row);
-//            }
-//        }
-//    });
-//}
 
 WcpModuleController::~WcpModuleController()
 {
-    _running = false;
-    _thread.join();
+    stopProcessing();
 }
 
 void WcpModuleController::add(WcpAbstractModule* module)
@@ -48,33 +20,133 @@ void WcpModuleController::add(WcpAbstractModule* module)
     setCallbackFunc(module);
 }
 
-void WcpModuleController::processImage(cv::Mat cvimage)
+void WcpModuleController::processImage(cv::Mat* cvimage)
 {
     /* Добавляем каринку в список */
-    _image_list.push_back(cvimage);
+    cv::Mat* img = addImage(nullptr, cvimage->clone());
 
     nlohmann::json source_image;
     source_image["name"] = "source_image";
-    source_image["image"] = reinterpret_cast<uint64_t>(&_image_list.back());
+    source_image["image"] = reinterpret_cast<uint64_t>(img);
     source_image["object_uid"] = uint64_t(0);
     source_image["parent_uid"] = uint64_t(0);
 
+    std::lock_guard<std::mutex> lock(_heap_mutex);
     _heap.push_back(source_image);
 }
 
-typedef void (WcpModuleController::*testFunc)(nlohmann::json,nlohmann::json&);
+void WcpModuleController::addObject(nlohmann::json object)
+{
+    if (WcpModuleUtils::ckeckJsonField(object, "rect", JsDataType::object) == true) {
+        replaceRectWithImage(object);
+    }
+    std::lock_guard lock(_heap_mutex);
+    _heap.push_back(object);
+}
+
+void WcpModuleController::createCallbackFunc()
+{
+    _callback_func = [](uint64_t ctrl_ptr, uint64_t module_ptr, const char* data) {
+        /* Декодировка параметров */
+        auto this_controller = reinterpret_cast<WcpModuleController*>(ctrl_ptr);
+        auto module = reinterpret_cast<WcpAbstractModule*>(module_ptr);
+        auto request = nlohmann::json::parse(data);
+
+        /* debug */ std::cout << "callback_func: " << request << std::endl;
+
+        if (WcpModuleUtils::ckeckJsonField(request, "action", JsDataType::string) == false) {
+            throw std::exception(R"(invalid or missing "object" field in request)");
+        }
+
+        /* Обработка запрашиваемого действия */
+        if (request["action"] == "register") {
+            if (WcpModuleUtils::ckeckJsonField(request, "object_list", JsDataType::array) == false) {
+                throw std::exception(R"(invalid or missing "object_list" field in request)");
+            }
+
+            nlohmann::json response;
+            for (std::string class_name : request["object_list"]) {
+                nlohmann::json jsclass_uid;
+                jsclass_uid[class_name] = uint64_t(2);
+                response["objects_uid"].push_back(jsclass_uid);
+            }
+
+            this_controller->sendCommand(module, response);
+            return;
+        }
+
+        if (request["action"] == "commit") {
+            if (WcpModuleUtils::ckeckJsonField(request, "object", JsDataType::array) == false) {
+                throw std::exception(R"(invalid or missing "object_array" field in request)");
+            }
+            auto object = request["object"];
+            this_controller->addObject(object);
+            return;
+        }
+//        if (request["action"] == "commit") {
+//            if (WcpModuleUtils::ckeckJsonField(request, "object", JsDataType::object) == false) {
+//                throw std::exception(R"(invalid or missing "object" field in request)");
+//            }
+//            auto object = request["object"];
+//            this_controller->addObject(object);
+//            return;
+//        }
+    };
+}
+
+void WcpModuleController::startProcessing()
+{
+    _running = true;
+    _thread = std::thread([this]() {
+        while (_running) {
+            nlohmann::json heap_dump;
+            {
+                _heap_mutex.lock();
+                heap_dump = _heap;
+                _heap.clear();
+                _heap_mutex.unlock();
+            }
+            for (auto&& object : heap_dump) {
+                propagateObject(object);
+            }
+        }
+    });
+    _thread.detach();
+}
+
+void WcpModuleController::stopProcessing()
+{
+    removeCallbackFunc();
+    _running = false;
+}
+
 void WcpModuleController::setCallbackFunc(WcpAbstractModule* module)
 {
     nlohmann::json js_set_callback;
     js_set_callback["action"] = "set_callback";
     js_set_callback["ctrl_ptr"] = reinterpret_cast<uint64_t>(this);
-    js_set_callback["callback_func"] = reinterpret_cast<uint64_t>(_callback_func);
+    js_set_callback["callback_func"] = reinterpret_cast<uint64_t>(&_callback_func);
 
     auto module_answer = nlohmann::json::parse(module->process(js_set_callback.dump().c_str()));
 
     if (module_answer["status"] == "failed") {
-        std::string err_msg = "Failed to callback_func to module: " + std::string(module->header()->name());
+        std::string err_msg = "Failed set callback_func to module: " + std::string(module->header()->name());
         throw std::exception(err_msg.c_str());
+    }
+}
+
+void WcpModuleController::removeCallbackFunc()
+{
+    nlohmann::json js_set_callback;
+    js_set_callback["action"] = "remove_callback";
+    js_set_callback["ctrl_ptr"] = reinterpret_cast<uint64_t>(this);
+
+    for (auto&& module : _module_list) {
+        auto module_answer = nlohmann::json::parse(module->process(js_set_callback.dump().c_str()));
+        if (module_answer["status"] == "failed") {
+            std::string err_msg = "Failed set callback_func to module: " + std::string(module->header()->name());
+            throw std::exception(err_msg.c_str());
+        }
     }
 }
 
@@ -96,74 +168,35 @@ void WcpModuleController::propagateObject(nlohmann::json object)
     }
 }
 
-/* Рекурсивная обработка работает в контексте одной строки таблицы */
-void WcpModuleController::processRecursively(nlohmann::json object_row)
+cv::Mat* WcpModuleController::addImage(cv::Mat* parent_cvimage, cv::Mat cvimage)
 {
-    /* Итерация по результирующим объектам отработавших модулей */
-    for (auto&& js_class : object_row) {
+    std::shared_ptr<cv::Mat*> test;
+    _sub_images[parent_cvimage].push_back(cvimage);
+    return &_sub_images[parent_cvimage].back();
+}
 
-        /* Поиск среди неотработавших модулей */
-        for (auto&& module : _module_list) {
-
-            /* Если в куче содержится поле со значением - массивом объектов,
-             * которое может обработать один из модулей, передаем его ему */
-            if (js_class["name"] == std::string(module->header()->explicitDependence())) {
-
-                /* Формирование входных данных */
-                nlohmann::json js_process;
-                js_process["action"] = "process";
-                js_process["object_array1d"] = js_class["object_array1d"]; // Список объектов класса
-
-                /* Блокирующая функция */
-                auto module_answer = nlohmann::json::parse(module->process(js_process.dump().c_str()));
-
-                if (module_answer["status"] == "success") {
-                    /* Ответ модуля разбивается на объекты и добавляется в кучу */
-                    for (auto&& answer_elem : module_answer["object_array2d"]) {
-                        auto it = answer_elem.begin();
-                        nlohmann::json js_resulting_class = {
-                            { "name" , it.key() }
-                            , { "object_array1d", it.value() }
-                        };
-                        { /* Проверка результирующих объектов на наличие части изображения */
-                            auto&& result_obj_array = js_resulting_class["object_array1d"];
-                            bool rect_exist = WcpModuleUtils::keyExist(result_obj_array[0], "rect");
-                            ImageList parent_image_parts;
-                            /* Прямоугольник в объекте заменяется на изображение */
-                            if (rect_exist) {
-                                cv::Mat parent_obj_image = WcpModuleUtils::jsonToImage(js_class["image"]);
-                                for (auto&& obj : result_obj_array) {
-                                    cv::Rect obj_rect = WcpModuleUtils::jsonToRect<cv::Rect>(obj["rect"]);
-                                    obj_rect = WcpModuleUtils::fixRect(obj_rect, parent_obj_image);
-                                    parent_image_parts.push_back(parent_obj_image(obj_rect));
-                                    obj["image"] = WcpModuleUtils::imageToJson(parent_image_parts.back());
-                                    obj.erase("rect");
-                                }
-                            }
-                            std::cout << "Debug, js_resulting_class: " << js_resulting_class << std::endl;
-                            /* Попытка обработать полученный ответ другими модулями */
-                            processRecursively(nlohmann::json::array({js_resulting_class}));
-                        }
-                    }
-                }
-            }
-        }
+void WcpModuleController::removeImage(cv::Mat* parent_cvimage, cv::Mat& cvimage)
+{
+    _sub_images[parent_cvimage].remove_if([&](cv::Mat& cvsub_image){
+        return &cvsub_image == &cvimage;
+    });
+    if (_sub_images[parent_cvimage].empty()) {
+        _sub_images.erase(parent_cvimage);
     }
 }
 
-void WcpModuleController::callbackFunc(nlohmann::json request, nlohmann::json& response)
+void WcpModuleController::replaceRectWithImage(nlohmann::json& object)
 {
-    std::cout << "callback_func: " << request << std::endl;
+    cv::Mat parent_image = WcpModuleUtils::jsonToImage(object["parent_image"]);
+    cv::Rect2f rect = WcpModuleUtils::jsonToRect<cv::Rect2f>(object["rect"]);
+    cv::Rect roi = WcpModuleUtils::fixRect(rect, parent_image);
 
-    if (request["action"] == "register") {
-        nlohmann::json objects_uid;
+    cv::Mat sub_image = parent_image(roi);
 
-        for (std::string class_name : request["object_list"]) {
-            nlohmann::json jsclass_uid;
-            jsclass_uid[class_name] = uint64_t((id++ + 3) * 2);
-            objects_uid.push_back(jsclass_uid);
-        }
+    cv::Mat* img = addImage(
+                reinterpret_cast<cv::Mat*>(uint64_t(object["parent_image"]))
+            , sub_image);
+    object["image"] = uint64_t(img);
 
-        response["objects_uid"] = objects_uid;
-    }
+    object.erase("rect");
 }

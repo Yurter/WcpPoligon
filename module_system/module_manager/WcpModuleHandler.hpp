@@ -4,7 +4,7 @@
 #include <Windows.h>
 
 /* Класс-обертка вокруг dll и заголовка модуля */
-class WcpModuleHandler
+class WCP_DLL_EXPORT WcpModuleHandler
 {
 
 public:

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <filesystem>
 
-WcpModuleManager::WcpModuleManager(std::string module_path) :
+WcpModuleManager::WcpModuleManager(const char *module_path) :
     _module_path(module_path)
 {
     //

@@ -8,21 +8,21 @@
 
 static uint64_t id = 1;
 
-static CallbackFunc callback_func = [](nlohmann::json request, nlohmann::json& response) {
-    std::cout << "callback_func: " << request << std::endl;
+//static CallbackFunc callback_func = [](nlohmann::json request, nlohmann::json& response) {
+//    std::cout << "callback_func: " << request << std::endl;
 
-    if (request["action"] == "register") {
-        nlohmann::json objects_uid;
+//    if (request["action"] == "register") {
+//        nlohmann::json objects_uid;
 
-        for (std::string class_name : request["object_list"]) {
-            nlohmann::json jsclass_uid;
-            jsclass_uid[class_name] = uint64_t((id++ + 3) * 2);
-            objects_uid.push_back(jsclass_uid);
-        }
+//        for (std::string class_name : request["object_list"]) {
+//            nlohmann::json jsclass_uid;
+//            jsclass_uid[class_name] = uint64_t((id++ + 3) * 2);
+//            objects_uid.push_back(jsclass_uid);
+//        }
 
-        response["objects_uid"] = objects_uid;
-    }
-};
+//        response["objects_uid"] = objects_uid;
+//    }
+//};
 
 int main()
 {
