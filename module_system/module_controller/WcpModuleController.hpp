@@ -50,4 +50,6 @@ private:
     std::thread         _thread;
     volatile bool       _running;
 
+    CallbackFunc        _callback_func;
+
 };

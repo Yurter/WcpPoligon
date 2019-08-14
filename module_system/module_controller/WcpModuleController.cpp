@@ -5,8 +5,6 @@
 WcpModuleController::WcpModuleController() :
     _running(false)
 {
-    auto test = &WcpModuleController::callbackFunc;
-    std::cout << "test: " << test << std::endl;
     _running = true;
     _thread = std::thread([this]() {
         while (_running) {
@@ -17,6 +15,11 @@ WcpModuleController::WcpModuleController() :
             _heap.clear();
         }
     });
+
+    _callback_func = [](uint64_t ctrl_ptr, nlohmann::json request, nlohmann::json& response){
+        auto this_ptr = reinterpret_cast<WcpModuleController*>(ctrl_ptr);
+        this_ptr->callbackFunc(request, response);
+    };
 }
 //{
 //    _running = true;
@@ -64,8 +67,11 @@ void WcpModuleController::setCallbackFunc(WcpAbstractModule* module)
 {
     nlohmann::json js_set_callback;
     js_set_callback["action"] = "set_callback";
-    js_set_callback["callback_func"] = reinterpret_cast<uint64_t>(&WcpModuleController::callbackFunc);
+    js_set_callback["ctrl_ptr"] = reinterpret_cast<uint64_t>(this);
+    js_set_callback["callback_func"] = reinterpret_cast<uint64_t>(_callback_func);
+
     auto module_answer = nlohmann::json::parse(module->process(js_set_callback.dump().c_str()));
+
     if (module_answer["status"] == "failed") {
         std::string err_msg = "Failed to callback_func to module: " + std::string(module->header()->name());
         throw std::exception(err_msg.c_str());
@@ -147,5 +153,17 @@ void WcpModuleController::processRecursively(nlohmann::json object_row)
 
 void WcpModuleController::callbackFunc(nlohmann::json request, nlohmann::json& response)
 {
+    std::cout << "callback_func: " << request << std::endl;
 
+    if (request["action"] == "register") {
+        nlohmann::json objects_uid;
+
+        for (std::string class_name : request["object_list"]) {
+            nlohmann::json jsclass_uid;
+            jsclass_uid[class_name] = uint64_t((id++ + 3) * 2);
+            objects_uid.push_back(jsclass_uid);
+        }
+
+        response["objects_uid"] = objects_uid;
+    }
 }

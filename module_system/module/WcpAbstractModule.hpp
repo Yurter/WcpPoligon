@@ -10,7 +10,7 @@
 #define WCP_DLL_EXPORT __declspec(dllexport)
 
 /* Callback-функция для выполнения запросов из модуля */
-using CallbackFunc = void(*)(nlohmann::json request, nlohmann::json& response);
+using CallbackFunc = void(*)(uint64_t ctrl_ptr, nlohmann::json request, nlohmann::json& response);
 
 using ObjectQueue = AsyncQueue<nlohmann::json>;
 
@@ -86,8 +86,11 @@ protected:
             if (WcpModuleUtils::ckeckJsonField(input_data, "callback_func", JsDataType::number_unsigned) == false) {
                 throw_exception("invalid or missing \"callback_func\" field in input data");
             }
+            if (WcpModuleUtils::ckeckJsonField(input_data, "ctrl_ptr", JsDataType::number_unsigned) == false) {
+                throw_exception("invalid or missing \"ctrl_ptr\" field in input data");
+            }
 
-            onSetCallback(input_data["callback_func"]);
+            onSetCallback(input_data["ctrl_ptr"], input_data["callback_func"]);
             output_data["status"] = "success";
             return;
         }
@@ -107,8 +110,8 @@ protected:
     }
 
     virtual void onProcess(const nlohmann::json object) = 0;
-    virtual void onSetCallback(uint64_t func_pointer) {
-        _callback_func = reinterpret_cast<CallbackFunc>(func_pointer);
+    virtual void onSetCallback(uint64_t ctrl_pointer, uint64_t func_pointer) {
+        _callback_list[ctrl_pointer] = func_pointer;
         registerController();
         loadData();
     }
@@ -216,7 +219,8 @@ private:
     ObjectQueue         _object_queue;
 
     /* Вспомогательные члены класса */
-    CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
+    nlohmann::json      _callback_list;
+//    CallbackFunc        _callback_func;     /* Связь от модуля к ядру                                               */
     nlohmann::json      _objects_uid;       /* UID объекта в контексте моудуля                                      */
     std::string         _json_dump_buffer;  /* Возвращаемый указатель метода process(const char* input_data)        *
                                              * ссылается на содержмиое этой строки                                  */
