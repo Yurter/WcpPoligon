@@ -24,6 +24,10 @@ static uint64_t id = 1;
 //    }
 //};
 
+static CallbackFunc callback_func = [](const char* message){
+    std::cout << "ctrl_handler: " <<  message << std::endl;
+};
+
 int main()
 {
 
@@ -48,7 +52,7 @@ int main()
     } catch (std::exception e) { std::cout << e.what() << std::endl; return -1; }
 
     /* Построение графа из модулей для текущей камеры */
-    WcpModuleController module_controller;
+    WcpModuleController module_controller(0,callback_func);
     for (auto&& module_header : module_maneger.availableModules()) {
         module_controller.add(module_maneger.createModule(module_header));
     }

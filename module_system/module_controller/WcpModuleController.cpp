@@ -2,8 +2,10 @@
 #include "../module_utils/WcpModuleUtils.hpp"
 #include <iostream>
 
-WcpModuleController::WcpModuleController() :
-    _running(false)
+WcpModuleController::WcpModuleController(uint64_t controller_handler, CallbackFunc controller_callback) :
+    _controller_handler(controller_handler)
+  , _controller_callback(controller_callback)
+  , _running(false)
 {
     createCallbackFunc();
     startProcessing();
@@ -50,6 +52,11 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
     _heap.push_back(source_image);
 }
 
+void WcpModuleController::subscribeToObject(std::string object_name)
+{
+    _subscribe_object_list.push_back(object_name);
+}
+
 //void WcpModuleController::processImage(cv::Mat* cvimage)
 //{
 //    /* Добавляем каринку в список */
@@ -73,6 +80,8 @@ void WcpModuleController::commitObject(nlohmann::json object)
     saveObject(object);
     /* Подготовка оъекта к обработке и помещении его в кучу */
     addObject(object);
+    /* Уведовление класс верхнего уровня при необходимости */
+    notifyHandler(object);
 }
 
 void WcpModuleController::process(nlohmann::json message)
@@ -219,7 +228,22 @@ void WcpModuleController::removeParentImage(nlohmann::json object)
 void WcpModuleController::saveObject(nlohmann::json object)
 {
     //убрать служебные поля
+    if (WcpModuleUtils::ckeckJsonField(object["data"], "pointer", JsDataType::number_unsigned) == true) {
+        object["data"].erase("pointer");
+    }
+    if (WcpModuleUtils::ckeckJsonField(object["data"], "root_image", JsDataType::number_unsigned) == true) {
+        object["data"].erase("root_image");
+    }
+    if (WcpModuleUtils::ckeckJsonField(object["data"], "parent_image", JsDataType::number_unsigned) == true) {
+        object["data"].erase("parent_image");
+    }
     std::cout << "Save object to DB: " << object << std::endl;
+//    //
+//    nlohmann::json message;
+//    message["action"] = "save_object";
+//    message["object"] = object;
+//    _controller_callback(message.dump().c_str());
+    sendCommandToHandler("save_object", object);
 }
 
 void WcpModuleController::addObject(nlohmann::json object)
@@ -232,6 +256,31 @@ void WcpModuleController::addObject(nlohmann::json object)
     }
     std::lock_guard lock(_heap_mutex);
     _heap.push_back(object);
+}
+
+void WcpModuleController::notifyHandler(nlohmann::json object)
+{
+    auto ret = std::find(_subscribe_object_list.begin()
+                         , _subscribe_object_list.end()
+                         , object["name"]);
+//    if (ret != _subscribe_object_list.end()) {
+//        nlohmann::json message;
+//        message["action"] = "notify";
+//        message["object"] = object;
+//        _controller_callback(message.dump().c_str());
+//    }
+    if (ret != _subscribe_object_list.end()) {
+        sendCommandToHandler("notify", object);
+    }
+}
+
+void WcpModuleController::sendCommandToHandler(std::string action, nlohmann::json data)
+{
+    nlohmann::json message;
+    message["action"] = action;
+    message["data"] = data;
+    message["pointer"] = _controller_handler;
+    _controller_callback(message.dump().c_str());
 }
 
 void WcpModuleController::printTable()

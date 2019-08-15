@@ -19,7 +19,7 @@ class WCP_DLL_EXPORT WcpModuleController
 
 public:
 
-    WcpModuleController();
+    WcpModuleController(uint64_t controller_handler, CallbackFunc controller_callback);
     ~WcpModuleController();
 
     /* Метод добавляет модуль в кучу */
@@ -30,6 +30,9 @@ public:
 
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     void                processImage(cv::Mat* cvimage);
+
+    /* ? */
+    void                subscribeToObject(std::string object_name);
 
 
     void                sendCommand(WcpAbstractModule* module, nlohmann::json message);
@@ -58,11 +61,19 @@ private:
 
     void                saveObject(nlohmann::json object);
     void                addObject(nlohmann::json object);
+    void                notifyHandler(nlohmann::json object);
+
+    void                sendCommandToHandler(std::string action, nlohmann::json data);
 
     void printTable();
 
 
 private:
+
+    uint64_t            _controller_handler;
+    CallbackFunc        _controller_callback;
+
+    StringList          _subscribe_object_list;
 
 
 //    WcpModuleConnection* _connection;
