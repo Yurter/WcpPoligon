@@ -63,7 +63,7 @@ protected:
 
     void processMessage(const nlohmann::json message) {
 
-        std::cout << "received message: " << message << std::endl;
+//        std::cout << "received message: " << message << std::endl;
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (message["action"] == "process") {
@@ -71,7 +71,7 @@ protected:
 //            nlohmann::json object = message["data"]["object"];
             nlohmann::json object = message["data"];
 
-            std::cout << "pr_object: " << object << std::endl;
+//            std::cout << "pr_object: " << object << std::endl;
 
 
             if (!_object_queue.push(object)) { /* ? */ }
@@ -80,11 +80,11 @@ protected:
         }
 
         if (message["action"] == "set_callback") {
-            std::cout << "sender" << message["sender"] << std::endl;
-            std::cout << "data" << message["data"] << std::endl;
-            std::cout << "callback_ptr" <<  message["data"]["callback_ptr"] << std::endl;
+//            std::cout << "sender" << message["sender"] << std::endl;
+//            std::cout << "data" << message["data"] << std::endl;
+//            std::cout << "callback_ptr" <<  message["data"]["callback_ptr"] << std::endl;
             onSetCallback(message["sender"], message["data"]["callback_ptr"]);
-            std::cout << "callback_ptr seted" << std::endl;
+//            std::cout << "callback_ptr seted" << std::endl;
             return;
         }
 
@@ -142,8 +142,8 @@ protected:
 
     /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
     void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
-        std::cout << __FUNCTION__ << std::endl;
-        std::cout << "_objects_uid: " << _objects_uid << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
+//        std::cout << "_objects_uid: " << _objects_uid << std::endl;
 //        std::cout << "_objects_uid: " << uint64_t(_objects_uid[obj_name.c_str()]) << std::endl;
 
 
@@ -163,14 +163,14 @@ protected:
                     , parent["ctrl_ptr"]
                     , jsobj_value);
 
-        std::cout << "object: " << object << std::endl;
+//        std::cout << "object: " << object << std::endl;
         commitObject(object);
-         std::cout << "stashObject pre\n";
-         std::cout << "_objects_uid: " << _objects_uid << std::endl;
-         std::cout << "obj_name.c_str(): " << obj_name.c_str() << std::endl;
+//         std::cout << "stashObject pre\n";
+//         std::cout << "_objects_uid: " << _objects_uid << std::endl;
+//         std::cout << "obj_name.c_str(): " << obj_name.c_str() << std::endl;
 //        _objects_uid[obj_name.c_str()] = uint64_t(_objects_uid[obj_name.c_str()]) + 1;
 
-        std::cout << "stashObject finised\n";
+//        std::cout << "stashObject finised\n";
     }
 //    /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
 //    void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
@@ -230,7 +230,7 @@ private:
     }
 
     void commitObject(nlohmann::json object) {
-        std::cout << __FUNCTION__ << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
         auto message = WcpModuleUtils::createMessage(
                     ReceiverType::Controller
                     , uint64_t(this)
@@ -241,13 +241,13 @@ private:
     }
 
     void sendMessage(nlohmann::json message) {
-        std::cout << __FUNCTION__ << std::endl;
-        std::cout << "_callback_list: " << _callback_list << std::endl;
-        std::cout << "receiver: " << message["receiver"].dump().c_str() << std::endl;
-        std::cout << "qwe: " << uint64_t(CallbackFunc(uint64_t(_callback_list[message["receiver"].dump().c_str()]))) << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
+//        std::cout << "_callback_list: " << _callback_list << std::endl;
+//        std::cout << "receiver: " << message["receiver"].dump().c_str() << std::endl;
+//        std::cout << "qwe: " << uint64_t(CallbackFunc(uint64_t(_callback_list[message["receiver"].dump().c_str()]))) << std::endl;
 //        auto callbac_func = CallbackFunc(_callback_list[uint64_t(message["receiver"])]);
         auto callbac_func = CallbackFunc(uint64_t(_callback_list[message["receiver"].dump().c_str()]));
-        std::cout << "callbac_func: " << callbac_func << std::endl;
+//        std::cout << "callbac_func: " << callbac_func << std::endl;
 //        callbac_func("Hello world");
         callbac_func(message.dump().c_str());
     }

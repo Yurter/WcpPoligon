@@ -59,6 +59,8 @@ private:
     void                saveObject(nlohmann::json object);
     void                addObject(nlohmann::json object);
 
+    void printTable();
+
 
 private:
 

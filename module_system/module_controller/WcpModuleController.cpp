@@ -16,7 +16,7 @@ WcpModuleController::~WcpModuleController()
 
 void WcpModuleController::add(WcpAbstractModule* module)
 {
-    std::cout << __FUNCTION__ << std::endl;
+//    std::cout << __FUNCTION__ << std::endl;
     _module_list.push_back(module);
     setCallbackFunc(module);
 }
@@ -36,12 +36,14 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
     cv::Mat* img = addImage(uint64_t(&_image_list.back()), _image_list.back());
     uint64_t img_ptr = reinterpret_cast<uint64_t>(img);
 
+    std::cout << ">>> (key)source_img: " << uint64_t(&_image_list.back()) << std::endl;
+
     nlohmann::json source_image = WcpModuleUtils::createObject(
                 "source_image"
                 , 0
                 , 0
                 , uint64_t(this)
-                , WcpModuleUtils::createImage(img_ptr, img_ptr, 0)
+                , WcpModuleUtils::createImage(img_ptr, uint64_t(&_image_list.back()), 0)
                 );
 
     std::lock_guard<std::mutex> lock(_heap_mutex);
@@ -88,14 +90,11 @@ void WcpModuleController::process(nlohmann::json message)
 //    }
 }
 
-static CallbackFunc test_func = [](const char* message) {
-    std::cout << "test_func: " << message << std::endl;
-};
 
 void WcpModuleController::createCallbackFunc()
 {
     _callback_func = [](const char* message) {
-        std::cout << "ctrl call back: " << std::endl;
+//        std::cout << "ctrl call back: " << std::endl;
         auto jsmessage = nlohmann::json::parse(message);
         /* Декодировка параметров */
         auto this_controller = reinterpret_cast<WcpModuleController*>(uint64_t(jsmessage["receiver"]));
@@ -111,11 +110,11 @@ void WcpModuleController::createCallbackFunc()
         if (jsmessage["action"] == "commit") {
             auto object = jsmessage["data"];
             this_controller->commitObject(object);
-            std::cout << "action commit finished\n";
+//            std::cout << "action commit finished\n";
             return;
         }
     };
-    std::cout << "#### " << &_callback_func << std::endl;
+//    std::cout << "#### " << &_callback_func << std::endl;
 }
 
 //void WcpModuleController::createCallbackFunc()
@@ -173,8 +172,10 @@ void WcpModuleController::startProcessing()
             for (auto&& object : heap_dump) {
                 propagateObject(object);
             }
-            std::cout << "controller_loop\n";
+//            std::cout << "controller_loop\n";
+//            std::cout << "######################################################## " << _image_list.size() << std::endl;
             sleep_for_ms(500);
+            printTable();
         }
     });
     _thread.detach();
@@ -197,7 +198,7 @@ void WcpModuleController::setCallbackFunc(WcpAbstractModule* module)
                 , "set_callback"
                 , jscallback
                 );
-    std::cout << "setCallbackFunc: " << message << std::endl;
+//    std::cout << "setCallbackFunc: " << message << std::endl;
     module->process(message.dump().c_str());
 }
 
@@ -236,7 +237,7 @@ void WcpModuleController::setCallbackFunc(WcpAbstractModule* module)
 void WcpModuleController::propagateObject(nlohmann::json object)
 {
     std::cout << __FUNCTION__ << " object:" << object << std::endl;
-    std::cout << "_module_list.size():" << _module_list.size() << std::endl;
+//    std::cout << "_module_list.size():" << _module_list.size() << std::endl;
     for (auto&& module : _module_list) {
         std::cout << "explicitDependence:" << module->header()->explicitDependence() << std::endl;
         if (std::string(module->header()->explicitDependence()) == object["name"]) {
@@ -247,15 +248,18 @@ void WcpModuleController::propagateObject(nlohmann::json object)
                         , "process"
                         , object
                         );
-            std::cout << "message: " << message << std::endl;
+//            std::cout << "message: " << message << std::endl;
             module->process(message.dump().c_str());
 //            _connection->sendMessage(message);
+            return;
         }
     }
+    removeParentImage(object);
 }
 
 cv::Mat* WcpModuleController::addImage(uint64_t root_cvimage, cv::Mat cvimage)
 {
+    std::cout << "@@addImage: " << root_cvimage << std::endl;
     _sub_images[root_cvimage].second.push_back(cvimage);
     _sub_images[root_cvimage].first++;
     return &_sub_images[root_cvimage].second.back();
@@ -263,24 +267,32 @@ cv::Mat* WcpModuleController::addImage(uint64_t root_cvimage, cv::Mat cvimage)
 
 void WcpModuleController::removeImage(uint64_t root_cvimage)
 {
+    std::cout << "@@removeImage: " << root_cvimage << std::endl;
+//    std::cout << "+++++++++++++++++++++++++++++++++++ss " << _sub_images.size() << std::endl;
+//    std::cout << "+++++++++++++++++++++++++++++++++++ " << _sub_images[root_cvimage].second.size() << std::endl;
     _sub_images[root_cvimage].first--;
     if (_sub_images[root_cvimage].first == 0) {
+//        std::cout << "+++++++++++++++++++++++++++++++++++ erase" << std::endl;
+        _image_list.remove_if([=](cv::Mat& img){
+            return uint64_t(&img) == root_cvimage;
+        });
         _sub_images.erase(root_cvimage);
     }
+//    std::cout << "+++++++++++++++++++++++++++++++++++ss " << _sub_images.size() << std::endl;
 }
 
 void WcpModuleController::replaceRoiWithImage(nlohmann::json& object)
 {
     std::cout << __FUNCTION__ << std::endl;
-    std::cout << "object: " << object << std::endl;
+//    std::cout << "object: " << object << std::endl;
     uint64_t root_image = object["data"]["root_image"];
     std::cout << "root_image: " << root_image << std::endl;
     cv::Mat* parent_image = reinterpret_cast<cv::Mat*>(uint64_t(object["data"]["parent_image"]));
-    std::cout << "parent_image: " << parent_image << std::endl;
+//    std::cout << "parent_image: " << parent_image << std::endl;
     cv::Rect2f rect = WcpModuleUtils::jsonToRect<cv::Rect2f>(object["data"]["rect"]);
-    std::cout << "rect: " << rect << std::endl;
+//    std::cout << "rect: " << rect << std::endl;
     cv::Rect2f roi = WcpModuleUtils::fixRect<cv::Rect2f>(rect, *parent_image);
-    std::cout << "roi: " << roi << std::endl;
+//    std::cout << "roi: " << roi << std::endl;
 
     cv::Mat sub_image = cv::Mat(*parent_image)(roi);
 //    std::cout << "sub_image: " << sub_image << std::endl;
@@ -293,15 +305,17 @@ void WcpModuleController::replaceRoiWithImage(nlohmann::json& object)
                                                  , uint64_t(object["data"]["parent_image"]));
 
     object.erase("rect");
-    std::cout << "replaced object: " << object << std::endl;
+//    std::cout << "replaced object: " << object << std::endl;
 }
 
 void WcpModuleController::removeParentImage(nlohmann::json object)
 {
-    if (WcpModuleUtils::ckeckJsonField(object, "root_image", JsDataType::array) == false) {
+//    std::cout << __FUNCTION__ << std::endl;
+//    std::cout << "object: " << object << std::endl;
+    if (WcpModuleUtils::ckeckJsonField(object["data"], "root_image", JsDataType::number_unsigned) == false) {
         return;
     }
-    removeImage(object["root_image"]);
+    removeImage(object["data"]["root_image"]);
 }
 
 void WcpModuleController::saveObject(nlohmann::json object)
@@ -313,15 +327,30 @@ void WcpModuleController::saveObject(nlohmann::json object)
 void WcpModuleController::addObject(nlohmann::json object)
 {
     std::cout << __FUNCTION__ << std::endl;
-    std::cout << "object: " << object << std::endl;
+//    std::cout << "object: " << object << std::endl;
     if (WcpModuleUtils::ckeckJsonField(object["data"], "rect", JsDataType::object)) {
         replaceRoiWithImage(object);
+        removeParentImage(object);
     } else {
         removeParentImage(object);
     }
     std::lock_guard lock(_heap_mutex);
     _heap.push_back(object);
 
-    std::cout << "object pushed " << std::endl;
+//    std::cout << "object pushed " << std::endl;
+}
+
+void WcpModuleController::printTable()
+{
+    std::cout << "--------------------------------------" << std::endl;;
+    for (auto&& row : _sub_images) {
+        std::cout << "key: " << row.first << " ";
+        std::cout << "n: " << row.second.first << " ";
+        for (auto&& img : row.second.second) {
+            std::cout << "img ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "--------------------------------------" << std::endl;
 }
 
