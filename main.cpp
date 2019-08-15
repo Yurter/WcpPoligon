@@ -34,8 +34,11 @@ int main()
 //    source.set(cv::CAP_PROP_FRAME_HEIGHT, 6);
     cv::Mat source_image;
 
+    WcpModuleConnection connection;
+
     /* Инициализация менеджера модулей */
-    WcpModuleManager module_maneger("D:\\dev\\WcpPoligon\\plugins");
+    WcpModuleManager module_maneger(&connection, R"(D:\dev\webcamcloud_server\WcpPoligon\plugins)");
+    module_maneger.load();
     for (auto&& module : module_maneger.availableModules()) {
         std::cout << "available module: " << module << std::endl;
     }
@@ -46,9 +49,9 @@ int main()
 
     /* Построение графа из модулей для текущей камеры */
     WcpModuleController module_controller;
-//    for (auto&& module_handler : *module_maneger.handlerList()) {
-//        module_controller.add(module_handler.module());
-//    }
+    for (auto&& module_header : module_maneger.availableModules()) {
+        module_controller.add(module_maneger.createModule(module_header));
+    }
 
     /* Устанвока сallback-функции */
 //    module_controller.setCallbackFunc(callback_func);
@@ -63,7 +66,7 @@ int main()
                 static int frame_counter = 0; /* Отладочный пропуск кадров для легкого чтения лога */
                 frame_counter++;
                 if (frame_counter % 40 == 0) {
-//                    module_controller.propagateImage(source_image);
+                    module_controller.processImage(&source_image);
 
 //                    std::cout << "result: " << result << std::endl;
 //                    int ii = 0;

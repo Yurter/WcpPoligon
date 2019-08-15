@@ -1,6 +1,6 @@
 #pragma once
-#include "../module/WcpAbstractModule.hpp"
-#include "../module/WcpModuleHeader.hpp"
+#include "../module_base/WcpAbstractModule.hpp"
+#include "../module_base/WcpModuleHeader.hpp"
 #include <Windows.h>
 
 /* Класс-обертка вокруг dll и заголовка модуля */

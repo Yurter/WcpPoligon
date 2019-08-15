@@ -1,11 +1,13 @@
 #pragma once
-#include "../module/WcpAbstractModule.hpp"
+#include "../module_base/WcpAbstractModule.hpp"
 #include <functional>
 #include <unordered_map>
 
 using ModuleList = std::list<WcpAbstractModule*>;
 using ImageList = std::list<cv::Mat>;
-using SubImageList = std::unordered_map<cv::Mat*,ImageList>;
+/* Список саб-картинок и счетчик необработанных */
+using SubImage = std::pair<uint64_t,ImageList>;
+using SubImageList = std::unordered_map<uint64_t,SubImage>;
 using ImageQueue = AsyncQueue<cv::Mat>;
 
 typedef std::function<void(nlohmann::json,nlohmann::json&)> LoopFunction;
@@ -24,7 +26,7 @@ public:
     void                add(WcpAbstractModule* module);
 
     /* Метод исключает модуль из кучи */
-//    void                remove(WcpAbstractModule* module);
+    void                remove(WcpAbstractModule* module);
 
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     void                processImage(cv::Mat* cvimage);
@@ -32,7 +34,9 @@ public:
 
     void                sendCommand(WcpAbstractModule* module, nlohmann::json message);
 
-    void                addObject(nlohmann::json object);
+    void                commitObject(nlohmann::json object);
+
+    void                process(nlohmann::json message);
 
 
 private:
@@ -42,17 +46,24 @@ private:
     void                stopProcessing();
 
     void                setCallbackFunc(WcpAbstractModule* module);
-    void                removeCallbackFunc();
+//    void                removeCallbackFunc();
 
     void                propagateObject(nlohmann::json object);
 
-    cv::Mat*            addImage(cv::Mat* parent_cvimage, cv::Mat cvimage);
-    void                removeImage(cv::Mat* parent_cvimage, cv::Mat& cvimage);
+    cv::Mat*            addImage(uint64_t root_cvimage, cv::Mat cvimage);
+    void                removeImage(uint64_t root_cvimage);
 
-    void                replaceRectWithImage(nlohmann::json& object);
+    void                replaceRoiWithImage(nlohmann::json& object);
+    void                removeParentImage(nlohmann::json object);
+
+    void                saveObject(nlohmann::json object);
+    void                addObject(nlohmann::json object);
 
 
 private:
+
+
+//    WcpModuleConnection* _connection;
 
     ModuleList          _module_list; /* Список всех модулей, участвующих в обработке изображения */
 
@@ -69,6 +80,7 @@ private:
     std::thread         _thread;
     std::atomic_bool    _running;
 
-    std::function<void(uint64_t,uint64_t,const char*)>  _callback_func;
+//    std::function<void(const char*)>  _callback_func;
+    CallbackFunc _callback_func;
 
 };

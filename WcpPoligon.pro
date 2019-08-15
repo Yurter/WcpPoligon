@@ -5,17 +5,19 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
+        module_system/module_connection/WcpModuleConnection.cpp \
         module_system/module_controller/WcpModuleController.cpp \
         main.cpp \
         module_system/module_manager/WcpModuleHandler.cpp \
         module_system/module_manager/WcpModuleManager.cpp
 
 HEADERS += \
-    module_system/module/AsyncQueue.hpp \
-    module_system/module/WcpModuleHeader.hpp \
-    module_system/module/WcpModuleUtils.hpp \
+    module_system/module_utils/AsyncQueue.hpp \
+    module_system/module_base/WcpModuleHeader.hpp \
+    module_system/module_utils/WcpModuleUtils.hpp \
+    module_system/module_connection/WcpModuleConnection.hpp \
     module_system/module_controller/WcpModuleController.hpp \
-    module_system/module/WcpAbstractModule.hpp \
+    module_system/module_base/WcpAbstractModule.hpp \
     module_system/module_manager/WcpModuleHandler.hpp \
     module_system/module_manager/WcpModuleManager.hpp \
     module_system/WcpHeader.hpp

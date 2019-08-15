@@ -7,6 +7,11 @@
 
 using JsDataType = nlohmann::detail::value_t;
 
+enum ReceiverType {
+    Controller,
+    Module
+};
+
 class WCP_DLL_EXPORT WcpModuleUtils
 {
 
@@ -63,13 +68,25 @@ public:
     static cvRect jsonToRect(nlohmann::json jsrect) {
         cvRect cvrect;
 
-        cvrect.x = jsrect["rect"]["x"];
-        cvrect.y = jsrect["rect"]["y"];
-        cvrect.width  = jsrect["rect"]["w"];
-        cvrect.height = jsrect["rect"]["h"];
+        cvrect.x = jsrect["x"];
+        cvrect.y = jsrect["y"];
+        cvrect.width  = jsrect["w"];
+        cvrect.height = jsrect["h"];
 
         return cvrect;
     }
+//    /* Метод собирает cv::Rect из nlohmann::json */
+//    template<typename cvRect>
+//    static cvRect jsonToRect(nlohmann::json jsrect) {
+//        cvRect cvrect;
+
+//        cvrect.x = jsrect["rect"]["x"];
+//        cvrect.y = jsrect["rect"]["y"];
+//        cvrect.width  = jsrect["rect"]["w"];
+//        cvrect.height = jsrect["rect"]["h"];
+
+//        return cvrect;
+//    }
 
     /* Метод собирает джейсон из cv::Rect */
     static nlohmann::json createJsonObject(std::string key, nlohmann::json value) {
@@ -149,4 +166,56 @@ public:
 //        //
 //    }
 
+
+
+    static nlohmann::json createMessage(ReceiverType receiver_type
+                                        , uint64_t sender, uint64_t receiver
+                                        , std::string action, nlohmann::json data) {
+        nlohmann::json message;
+        message["receiver_type"] = uint64_t(receiver_type);
+        message["sender"] = sender;
+        message["receiver"] = receiver;
+        message["action"] = action;
+        message["data"] = data;
+        return message;
+    }
+
+    static nlohmann::json createObject(std::string name
+                                       , uint64_t uid, uint64_t puid
+                                       , uint64_t ctrl_ptr
+                                       , nlohmann::json data) {
+        nlohmann::json object;
+        object["name"] = name;
+        object["uid"] = uid;
+        object["puid"] = puid;
+        object["ctrl_ptr"] = ctrl_ptr;
+        object["data"] = data;
+        return object;
+    }
+
+    static nlohmann::json createImage(uint64_t pointer, uint64_t root_image, uint64_t parent_image) {
+        nlohmann::json image;
+        image["pointer"] = pointer;
+        image["root_image"] = root_image;
+        image["parent_image"] = parent_image;
+        return image;
+    }
+
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

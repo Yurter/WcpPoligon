@@ -2,8 +2,9 @@
 #include <iostream>
 #include <filesystem>
 
-WcpModuleManager::WcpModuleManager(const char *module_path) :
+WcpModuleManager::WcpModuleManager(WcpModuleConnection* connection, const char *module_path) :
     _module_path(module_path)
+  , _connection(connection)
 {
     //
 }
@@ -26,6 +27,7 @@ HeaderList WcpModuleManager::availableModules()
 
 WcpAbstractModule* WcpModuleManager::createModule(WcpModuleHeader* module_header)
 {
+    std::cout << __FUNCTION__ << std::endl;
     auto dll_handler = std::find_if(_handler_list.begin(), _handler_list.end(), [module_header](WcpModuleHandler handler){
             return handler.header() == module_header;
     });
@@ -33,11 +35,15 @@ WcpAbstractModule* WcpModuleManager::createModule(WcpModuleHeader* module_header
         std::string err_msg = std::string("Failed to find dll handler by header: ") + module_header->name();
         throw std::exception(err_msg.c_str());
     }
-    return callDllFunction<CreateModuleFunc,WcpAbstractModule*>(*dll_handler, "createModule");
+    return callDllFunction<CreateModuleFunc,WcpAbstractModule*>(*dll_handler, "createModule");;
+//    auto module = callDllFunction<CreateModuleFunc,WcpAbstractModule*>(*dll_handler, "createModule");;
+//    module->setConnection(_connection);
+//    return module;
 }
 
 void WcpModuleManager::load()
 {
+    std::cout << __FUNCTION__ << std::endl;
     /* Загружаются все найденые в директории dll */
     for (auto&& dll_name : getFileNameList(_module_path, "dll")) {
         /* Поиск среди ранее загруженных dll по имени файла */
@@ -46,8 +52,9 @@ void WcpModuleManager::load()
         });
 
         /* Если dll уже загружена, переход к следующему имени dll */
-        if (ret == _handler_list.end()) { continue; }
+        if (ret != _handler_list.end()) { continue; }
 
+        std::cout << "dll_name: " << dll_name << std::endl;
         /* Попытка загрузить dll */
         std::wstring wstr(dll_name.begin(), dll_name.end());
         HINSTANCE h_instance = ::LoadLibrary(wstr.c_str());
