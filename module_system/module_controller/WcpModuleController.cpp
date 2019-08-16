@@ -122,6 +122,14 @@ void WcpModuleController::createCallbackFunc()
             this_controller->commitObject(object);
             return;
         }
+
+        if (jsmessage["action"] == "finished") {
+            std::cout << "\n" << "---------------------------\n\n";
+            auto object = jsmessage["data"];
+            std::cout << "finished object: " << object << std::endl;
+            this_controller->removeParentImage(object);
+            return;
+        }
     };
 }
 

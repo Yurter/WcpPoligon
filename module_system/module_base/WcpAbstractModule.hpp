@@ -25,6 +25,8 @@ class WCP_DLL_EXPORT WcpAbstractModule
 
 public:
 
+    bool flag = true;
+
     WcpAbstractModule(WcpModuleHeader* header) :
         _header(header)
 //      , _connection(nullptr)
@@ -35,7 +37,15 @@ public:
             while (_running) {
                 nlohmann::json object;
                 guaranteed_pop(_object_queue, object);
+//                object["result"] = "failed";
+                flag = true;
                 onProcess(object);
+                if (flag) {
+                    finishProcess(object);
+                }
+//                if (object["result"] == "failed") {
+//                    finishProcess(object);
+//                }
             }
         });
         _thread.detach();
@@ -154,6 +164,7 @@ protected:
 
 
 
+        flag = false;
 
         auto object = WcpModuleUtils::createObject(
                     obj_name
@@ -250,6 +261,16 @@ private:
 //        std::cout << "callbac_func: " << callbac_func << std::endl;
 //        callbac_func("Hello world");
         callbac_func(message.dump().c_str());
+    }
+
+    void finishProcess(const nlohmann::json object) {
+        auto message = WcpModuleUtils::createMessage(
+                    ReceiverType::Controller
+                    , uint64_t(this)
+                    , uint64_t(object["ctrl_ptr"])
+                    , "finished"
+                    , object);
+        sendMessage(message);
     }
 
 private:
