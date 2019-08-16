@@ -1,7 +1,6 @@
 #pragma once
 #include "WcpModuleHandler.hpp"
 #include "../module_base/WcpModuleHeader.hpp"
-#include "../module_connection/WcpModuleConnection.hpp"
 #include <list>
 
 using HandlerList = std::list<WcpModuleHandler>;
@@ -16,7 +15,7 @@ class WCP_DLL_EXPORT WcpModuleManager
 
 public:
 
-    WcpModuleManager(WcpModuleConnection* connection, const char *module_path);
+    WcpModuleManager(const char* module_path);
     ~WcpModuleManager();
 
     WcpModuleManager(WcpModuleManager&) = delete;
@@ -57,6 +56,5 @@ private:
 
     std::string         _module_path;   /* Относительный путь к директории, в котрой расположены модули */
     HandlerList         _handler_list;  /* Список хендлеров подгруженных dll                            */
-    WcpModuleConnection*_connection;
 
 };

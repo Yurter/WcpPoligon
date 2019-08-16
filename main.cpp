@@ -25,7 +25,37 @@ static uint64_t id = 1;
 //};
 
 static CallbackFunc callback_func = [](const char* message){
-    std::cout << "ctrl_handler: " <<  message << std::endl;
+    auto jsmessage = nlohmann::json::parse(message);
+    auto controller = reinterpret_cast<WcpModuleController*>(uint64_t(jsmessage["controller"]));
+//    auto user_data = reinterpret_cast<UserData*>(uint64_t(jsmessage["user_data"]));
+
+    if (jsmessage["action"] == "save_object") {
+        auto object = jsmessage["data"];
+        // user_data->onSaveObject(object);
+        return;
+    }
+
+    if (jsmessage["action"] == "notify") {
+        auto object = jsmessage["data"];
+        // user_data->onNotyfy(controller, object);
+        return;
+    }
+
+    if (jsmessage["action"] == "object_uid") {
+        auto object_name = jsmessage["data"];
+        // user_data->onObjectUidRequest(controller, object_name);
+        return;
+    }
+
+    if (jsmessage["action"] == "load_data") {
+        // user_data->onLoadData();
+        return;
+    }
+
+    if (jsmessage["action"] == "save_data") {
+        // user_data->onSaveData();
+        return;
+    }
 };
 
 int main()
@@ -38,10 +68,8 @@ int main()
 //    source.set(cv::CAP_PROP_FRAME_HEIGHT, 6);
     cv::Mat source_image;
 
-    WcpModuleConnection connection;
-
     /* Инициализация менеджера модулей */
-    WcpModuleManager module_maneger(&connection, R"(D:\dev\webcamcloud_server\WcpPoligon\plugins)");
+    WcpModuleManager module_maneger(R"(D:\dev\webcamcloud_server\WcpPoligon\plugins)");
     module_maneger.load();
     for (auto&& module : module_maneger.availableModules()) {
         std::cout << "available module: " << module->name() << std::endl;

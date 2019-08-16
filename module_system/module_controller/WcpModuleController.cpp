@@ -2,8 +2,8 @@
 #include "../module_utils/WcpModuleUtils.hpp"
 #include <iostream>
 
-WcpModuleController::WcpModuleController(uint64_t controller_handler, CallbackFunc controller_callback) :
-    _controller_handler(controller_handler)
+WcpModuleController::WcpModuleController(uint64_t user_data, CallbackFunc controller_callback) :
+    _user_data(user_data)
   , _controller_callback(controller_callback)
   , _running(false)
 {
@@ -58,6 +58,11 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
 void WcpModuleController::subscribeToObject(std::string object_name)
 {
     _subscribe_object_list.push_back(object_name);
+}
+
+CallbackFunc WcpModuleController::link()
+{
+    return _callback_func;
 }
 
 //void WcpModuleController::processImage(cv::Mat* cvimage)
@@ -293,7 +298,8 @@ void WcpModuleController::sendCommandToHandler(std::string action, nlohmann::jso
     nlohmann::json message;
     message["action"] = action;
     message["data"] = data;
-    message["pointer"] = _controller_handler;
+    message["controller"] = uint64_t(this);
+    message["user_data"] = _user_data;
     _controller_callback(message.dump().c_str());
 }
 

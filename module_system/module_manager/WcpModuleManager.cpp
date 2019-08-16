@@ -2,9 +2,8 @@
 #include <iostream>
 #include <filesystem>
 
-WcpModuleManager::WcpModuleManager(WcpModuleConnection* connection, const char *module_path) :
+WcpModuleManager::WcpModuleManager(const char* module_path) :
     _module_path(module_path)
-  , _connection(connection)
 {
     //
 }

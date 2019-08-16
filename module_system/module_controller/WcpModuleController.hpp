@@ -19,7 +19,7 @@ class WCP_DLL_EXPORT WcpModuleController
 
 public:
 
-    WcpModuleController(uint64_t controller_handler, CallbackFunc controller_callback);
+    WcpModuleController(uint64_t user_data, CallbackFunc controller_callback);
     ~WcpModuleController();
 
     /* Метод добавляет модуль в кучу */
@@ -33,6 +33,9 @@ public:
 
     /* Подписка на появление объекта по его имени */
     void                subscribeToObject(std::string object_name);
+
+    /* ? */
+    CallbackFunc        link();
 
 
     void                sendCommand(WcpAbstractModule* module, nlohmann::json message);
@@ -70,7 +73,7 @@ private:
 
 private:
 
-    uint64_t            _controller_handler;
+    uint64_t            _user_data;
     CallbackFunc        _controller_callback;
 
     StringList          _subscribe_object_list;
