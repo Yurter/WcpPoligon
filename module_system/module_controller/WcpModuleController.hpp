@@ -31,7 +31,7 @@ public:
     /* Метод пропускает изображение через граф модулей и возвращает массив результов их работы */
     void                processImage(cv::Mat* cvimage);
 
-    /* ? */
+    /* Подписка на появление объекта по его имени */
     void                subscribeToObject(std::string object_name);
 
 

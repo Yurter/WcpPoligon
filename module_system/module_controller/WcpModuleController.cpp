@@ -40,6 +40,9 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
 
     std::cout << ">>> (key)source_img: " << uint64_t(&_image_list.back()) << std::endl;
 
+    std::cout << ">>> img_ptr: " << img_ptr << std::endl;
+    cv::imwrite("img_ptr.png", WcpModuleUtils::jsonToImage(img_ptr));
+
     nlohmann::json source_image = WcpModuleUtils::createObject(
                 "source_image"
                 , 0
@@ -99,7 +102,6 @@ void WcpModuleController::process(nlohmann::json message)
 //    }
 }
 
-
 void WcpModuleController::createCallbackFunc()
 {
     _callback_func = [](const char* message) {
@@ -135,11 +137,11 @@ void WcpModuleController::startProcessing()
                 _heap.clear();
                 _heap_mutex.unlock();
             }
+            printTable();
             for (auto&& object : heap_dump) {
                 propagateObject(object);
             }
             sleep_for_ms(500);
-            printTable();
         }
     });
     _thread.detach();
@@ -168,6 +170,7 @@ void WcpModuleController::setCallbackFunc(WcpAbstractModule* module)
 void WcpModuleController::propagateObject(nlohmann::json object)
 {
     for (auto&& module : _module_list) {
+        std::cout << "-> " << module->header()->explicitDependence() << " " << object["name"] << std::endl;
         if (std::string(module->header()->explicitDependence()) == object["name"]) {
             auto message = WcpModuleUtils::createMessage(
                         ReceiverType::Module
@@ -237,7 +240,7 @@ void WcpModuleController::saveObject(nlohmann::json object)
     if (WcpModuleUtils::ckeckJsonField(object["data"], "parent_image", JsDataType::number_unsigned) == true) {
         object["data"].erase("parent_image");
     }
-    std::cout << "Save object to DB: " << object << std::endl;
+    std::cout << "\nSave object to DB: " << object << std::endl << std::endl;
 //    //
 //    nlohmann::json message;
 //    message["action"] = "save_object";
@@ -248,6 +251,7 @@ void WcpModuleController::saveObject(nlohmann::json object)
 
 void WcpModuleController::addObject(nlohmann::json object)
 {
+    std::cout << __FUNCTION__ << std::endl;
     if (WcpModuleUtils::ckeckJsonField(object["data"], "rect", JsDataType::object)) {
         replaceRoiWithImage(object);
         removeParentImage(object);
@@ -256,6 +260,8 @@ void WcpModuleController::addObject(nlohmann::json object)
     }
     std::lock_guard lock(_heap_mutex);
     _heap.push_back(object);
+    std::cout << "Pushed object: " << object << std::endl;
+    std::cout << __FUNCTION__ << " finished" << std::endl;
 }
 
 void WcpModuleController::notifyHandler(nlohmann::json object)
@@ -290,7 +296,7 @@ void WcpModuleController::printTable()
         std::cout << "key: " << row.first << " ";
         std::cout << "n: " << row.second.first << " ";
         for (auto&& img : row.second.second) {
-            std::cout << "img ";
+            std::cout << uint64_t(&img) << " ";
         }
         std::cout << std::endl;
     }

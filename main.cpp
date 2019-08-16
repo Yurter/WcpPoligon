@@ -44,7 +44,7 @@ int main()
     WcpModuleManager module_maneger(&connection, R"(D:\dev\webcamcloud_server\WcpPoligon\plugins)");
     module_maneger.load();
     for (auto&& module : module_maneger.availableModules()) {
-        std::cout << "available module: " << module << std::endl;
+        std::cout << "available module: " << module->name() << std::endl;
     }
     std::cout << std::endl;
     try {

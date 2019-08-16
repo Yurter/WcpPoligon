@@ -63,7 +63,7 @@ protected:
 
     void processMessage(const nlohmann::json message) {
 
-//        std::cout << "received message: " << message << std::endl;
+        std::cout << "received message: " << message << std::endl;
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (message["action"] == "process") {
@@ -170,7 +170,7 @@ protected:
 //         std::cout << "obj_name.c_str(): " << obj_name.c_str() << std::endl;
 //        _objects_uid[obj_name.c_str()] = uint64_t(_objects_uid[obj_name.c_str()]) + 1;
 
-//        std::cout << "stashObject finised\n";
+        std::cout << "stashObject finised\n";
     }
 //    /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
 //    void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
