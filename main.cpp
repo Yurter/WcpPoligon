@@ -58,6 +58,8 @@ static CallbackFunc callback_func = [](const char* message){
     }
 };
 
+
+
 int main()
 {
 
@@ -79,7 +81,6 @@ int main()
         module_maneger.load();
     } catch (std::exception e) { std::cout << e.what() << std::endl; return -1; }
 
-    /* Построение графа из модулей для текущей камеры */
     WcpModuleController module_controller(0,callback_func);
     for (auto&& module_header : module_maneger.availableModules()) {
         module_controller.add(module_maneger.createModule(module_header));

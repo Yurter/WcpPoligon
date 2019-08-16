@@ -10,6 +10,8 @@
 #include <thread>
 #include <atomic>
 
+#include "Remotery.h"
+
 /* Callback-функция для выполнения запросов из модуля */
 //using CallbackFunc = std::function<void(const char*)>;
 using CallbackFunc = void(*)(const char*);
@@ -36,16 +38,22 @@ public:
         _thread = std::thread([this]() {
             while (_running) {
                 nlohmann::json object;
-                guaranteed_pop(_object_queue, object);
+                {
+                    rmt_ScopedCPUSample(Uguaranteed_pop, 0);
+                    guaranteed_pop(_object_queue, object);
+                }
+
 //                object["result"] = "failed";
                 flag = true;
                 onProcess(object);
-                if (flag) {
+                if (flag)
+                {
+                    rmt_ScopedCPUSample(UfinishProcess, 0);
                     finishProcess(object);
                 }
 //                if (object["result"] == "failed") {
 //                    finishProcess(object);
-//                }
+//                }rmt_ScopedCPUSample(moveUpdate, 0);
             }
         });
         _thread.detach();

@@ -1,6 +1,7 @@
 #include "WcpModuleController.hpp"
 #include "../module_utils/WcpModuleUtils.hpp"
 #include <iostream>
+#include <Remotery.h>
 
 WcpModuleController::WcpModuleController(uint64_t user_data, CallbackFunc controller_callback) :
     _user_data(user_data)
@@ -34,15 +35,26 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
 {
     std::cout << __FUNCTION__ << std::endl;
     /* Добавляем каринку в список */
-    _image_list.push_back(cvimage->clone());
+
+    {
+        rmt_ScopedCPUSample(Uclone, 0);
+        _image_list.push_back(cvimage->clone());
+    }
+
+
+    rmt_BeginCPUSample(UaddImage, 0);
+
     cv::Mat* img = addImage(uint64_t(&_image_list.back()), _image_list.back());
     uint64_t img_ptr = reinterpret_cast<uint64_t>(img);
+
+    rmt_EndCPUSample();
 
     std::cout << ">>> (key)source_img: " << uint64_t(&_image_list.back()) << std::endl;
 
     std::cout << ">>> img_ptr: " << img_ptr << std::endl;
-    cv::imwrite("img_ptr.png", WcpModuleUtils::jsonToImage(img_ptr));
+//    cv::imwrite("img_ptr.png", WcpModuleUtils::jsonToImage(img_ptr));
 
+    rmt_BeginCPUSample(UcreateObject, 0);
     nlohmann::json source_image = WcpModuleUtils::createObject(
                 "source_image"
                 , 0
@@ -51,13 +63,30 @@ void WcpModuleController::processImage(cv::Mat* cvimage)
                 , WcpModuleUtils::createImage(img_ptr, uint64_t(&_image_list.back()), 0)
                 );
 
+    rmt_EndCPUSample();
+
+    rmt_BeginCPUSample(Ulock, 0);
     std::lock_guard<std::mutex> lock(_heap_mutex);
     _heap.push_back(source_image);
+
+    rmt_EndCPUSample();
 }
 
-void WcpModuleController::subscribeToObject(std::string object_name)
+void WcpModuleController::subscribeToObject(const char* object_name)
 {
     _subscribe_object_list.push_back(object_name);
+}
+
+void WcpModuleController::hookObject(const char* object_name)
+{
+    _hook_object_list.push_back(object_name);
+}
+
+void WcpModuleController::loadAll(WcpModuleManager* manager)
+{
+    for (auto&& module_header : manager->availableModules()) {
+        add(manager->createModule(module_header));
+    }
 }
 
 CallbackFunc WcpModuleController::link()
@@ -84,12 +113,16 @@ CallbackFunc WcpModuleController::link()
 
 void WcpModuleController::commitObject(nlohmann::json object)
 {
+    /* Уведовление класс верхнего уровня при необходимости */
+    notifyHandler(object);
+    /* ? */
+    if (hook(object)) {
+        return;
+    }
     /* Отсечение у объекта служебных полей и сохранение его в БД */
     saveObject(object);
     /* Подготовка оъекта к обработке и помещении его в кучу */
     addObject(object);
-    /* Уведовление класс верхнего уровня при необходимости */
-    notifyHandler(object);
 }
 
 void WcpModuleController::process(nlohmann::json message)
@@ -110,6 +143,7 @@ void WcpModuleController::process(nlohmann::json message)
 void WcpModuleController::createCallbackFunc()
 {
     _callback_func = [](const char* message) {
+        std::cout << "$$$$$$$$$$$$$$$$$$ " << message << std::endl;
         auto jsmessage = nlohmann::json::parse(message);
         /* Декодировка параметров */
         auto this_controller = reinterpret_cast<WcpModuleController*>(uint64_t(jsmessage["receiver"]));
@@ -125,6 +159,18 @@ void WcpModuleController::createCallbackFunc()
         if (jsmessage["action"] == "commit") {
             auto object = jsmessage["data"];
             this_controller->commitObject(object);
+            return;
+        }
+
+        if (jsmessage["action"] == "unhook") {
+            auto object = jsmessage["data"];
+            this_controller->unhook(object);
+            return;
+        }
+
+        if (jsmessage["action"] == "discard") {
+            auto object = jsmessage["data"];
+            this_controller->discard(object);
             return;
         }
 
@@ -151,10 +197,11 @@ void WcpModuleController::startProcessing()
                 _heap_mutex.unlock();
             }
             printTable();
+
+            rmt_ScopedCPUSample(UpropagateObject, 0);
             for (auto&& object : heap_dump) {
                 propagateObject(object);
             }
-            sleep_for_ms(500);
         }
     });
     _thread.detach();
@@ -293,6 +340,34 @@ void WcpModuleController::notifyHandler(nlohmann::json object)
     }
 }
 
+bool WcpModuleController::hook(nlohmann::json object)
+{
+    auto ret = std::find(_hook_object_list.begin()
+                         , _hook_object_list.end()
+                         , object["name"]);
+    if (ret != _hook_object_list.end()) {
+        sendCommandToHandler("hook", object);
+        return true;
+    }
+    return false;
+}
+
+void WcpModuleController::unhook(nlohmann::json object)
+{
+    /* Уведовление класс верхнего уровня при необходимости */
+    notifyHandler(object);
+    /* Отсечение у объекта служебных полей и сохранение его в БД */
+    saveObject(object);
+    /* Подготовка оъекта к обработке и помещении его в кучу */
+    addObject(object);
+}
+
+void WcpModuleController::discard(nlohmann::json object)
+{
+    std::cout << "]]]]]]]]]]]]]]]]]discarded_object: " << object << std::endl;
+    removeParentImage(object);
+}
+
 void WcpModuleController::sendCommandToHandler(std::string action, nlohmann::json data)
 {
     nlohmann::json message;
@@ -305,7 +380,10 @@ void WcpModuleController::sendCommandToHandler(std::string action, nlohmann::jso
 
 void WcpModuleController::printTable()
 {
-    std::cout << "--------------------------------------" << std::endl;;
+    std::cout << "--------------------------------------" << std::endl;
+    std::cout << "table size: " << _sub_images.size() << std::endl;
+    std::cout << "images size: " << _image_list.size() << std::endl;
+    std::cout << "heap size: " << _heap.size() << std::endl;
     for (auto&& row : _sub_images) {
         std::cout << "key: " << row.first << " ";
         std::cout << "n: " << row.second.first << " ";

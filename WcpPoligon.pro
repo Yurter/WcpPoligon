@@ -1,16 +1,18 @@
-TEMPLATE = app
-#TEMPLATE = lib
+#TEMPLATE = app
+TEMPLATE = lib
 CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
+        Remotery.c \
         module_system/module_controller/WcpModuleController.cpp \
         main.cpp \
         module_system/module_manager/WcpModuleHandler.cpp \
         module_system/module_manager/WcpModuleManager.cpp
 
 HEADERS += \
+    Remotery.h \
     module_system/module_utils/AsyncQueue.hpp \
     module_system/module_base/WcpModuleHeader.hpp \
     module_system/module_utils/WcpModuleUtils.hpp \

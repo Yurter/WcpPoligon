@@ -1,5 +1,6 @@
 #pragma once
 #include "../module_base/WcpAbstractModule.hpp"
+#include "../module_manager/WcpModuleManager.hpp"
 #include <functional>
 #include <unordered_map>
 
@@ -32,7 +33,21 @@ public:
     void                processImage(cv::Mat* cvimage);
 
     /* Подписка на появление объекта по его имени */
-    void                subscribeToObject(std::string object_name);
+    void                subscribeToObject(const char* object_name);
+
+    /* Изымать объект перед отправкой его в кучу */
+    void                setHookToObject(const char* object_name);
+
+    /* ? */
+    void                sendMessage(const char* message);
+
+
+    ///////////////////////////////////////
+
+
+    void                hookObject(const char* object_name);
+
+    void                loadAll(WcpModuleManager* manager);
 
     /* ? */
     CallbackFunc        link();
@@ -65,6 +80,9 @@ private:
     void                saveObject(nlohmann::json object);
     void                addObject(nlohmann::json object);
     void                notifyHandler(nlohmann::json object);
+    bool                hook(nlohmann::json object);
+    void                unhook(nlohmann::json object);
+    void                discard(nlohmann::json object);
 
     void                sendCommandToHandler(std::string action, nlohmann::json data);
 
@@ -77,6 +95,8 @@ private:
     CallbackFunc        _controller_callback;
 
     StringList          _subscribe_object_list;
+
+    StringList          _hook_object_list;
 
 
 //    WcpModuleConnection* _connection;

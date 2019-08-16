@@ -1,11 +1,15 @@
 #include "WcpModuleManager.hpp"
 #include <iostream>
 #include <filesystem>
+#include <Remotery.h>
 
 WcpModuleManager::WcpModuleManager(const char* module_path) :
     _module_path(module_path)
 {
-    //
+    auto config = rmt_Settings();
+    config->port=17816;
+    Remotery* rmt;
+    rmt_CreateGlobalInstance(&rmt);
 }
 
 WcpModuleManager::~WcpModuleManager()
