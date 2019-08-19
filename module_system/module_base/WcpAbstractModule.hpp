@@ -1,5 +1,4 @@
 #pragma once
-//#include "../module_connection/WcpModuleConnection.hpp"
 #include "../WcpHeader.hpp"
 #include <json.hpp>
 #include <opencv2/core.hpp>
@@ -13,9 +12,7 @@
 #include "Remotery.h"
 
 /* Callback-функция для выполнения запросов из модуля */
-//using CallbackFunc = std::function<void(const char*)>;
 using CallbackFunc = void(*)(const char*);
-//typedef void (*CallbackFunc)(const char*);
 using ObjectQueue = AsyncQueue<nlohmann::json>;
 
 #define throw_exception(msg) throw std::exception(std::string(std::string(_header->name()) + " : " + std::string(msg)).c_str())
@@ -31,7 +28,6 @@ public:
 
     WcpAbstractModule(WcpModuleHeader* header) :
         _header(header)
-//      , _connection(nullptr)
       , _running(false)
     {
         _running = true;
@@ -43,7 +39,6 @@ public:
                     guaranteed_pop(_object_queue, object);
                 }
 
-//                object["result"] = "failed";
                 flag = true;
                 onProcess(object);
                 if (flag)
@@ -51,9 +46,6 @@ public:
                     rmt_ScopedCPUSample(UfinishProcess, 0);
                     finishProcess(object);
                 }
-//                if (object["result"] == "failed") {
-//                    finishProcess(object);
-//                }rmt_ScopedCPUSample(moveUpdate, 0);
             }
         });
         _thread.detach();
@@ -73,10 +65,6 @@ public:
         processMessage(nlohmann::json::parse(message));
     }
 
-//    void setConnection(WcpModuleConnection* connection) {
-//        _connection = connection;
-//    }
-
 protected:
 
     void processMessage(const nlohmann::json message) {
@@ -85,31 +73,15 @@ protected:
 
         /* При предусмотренном типе действия, происходит вызов соответствующего метода */
         if (message["action"] == "process") {
-
-//            nlohmann::json object = message["data"]["object"];
             nlohmann::json object = message["data"];
-
-//            std::cout << "pr_object: " << object << std::endl;
-
-
             if (!_object_queue.push(object)) { /* ? */ }
-
             return;
         }
 
         if (message["action"] == "set_callback") {
-//            std::cout << "sender" << message["sender"] << std::endl;
-//            std::cout << "data" << message["data"] << std::endl;
-//            std::cout << "callback_ptr" <<  message["data"]["callback_ptr"] << std::endl;
             onSetCallback(message["sender"], message["data"]["callback_ptr"]);
-//            std::cout << "callback_ptr seted" << std::endl;
             return;
         }
-
-//        if (message["action"] == "set_connection") {
-//            onSetCallback(message["data"]["connection_ptr"]);
-//            return;
-//        }
 
         if (message["action"] == "remove_callback") {
             return;
@@ -131,15 +103,30 @@ protected:
 
     virtual void onProcess(const nlohmann::json object) = 0;
     virtual void onSetCallback(uint64_t contoller, uint64_t connection_pointer) {
-        std::cout << "onSetCallback: " << contoller << " " << connection_pointer << std::endl;
         _callback_list[std::to_string(contoller).c_str()] = connection_pointer;
-//        _connection = reinterpret_cast<WcpModuleConnection*>(uint64_t(connection_pointer));
-//        registerController();
-//        loadData();
+
+        //fix it: определить число полей у объекта
+        int64_t entries_amaunt = 0;
+        for (auto&& el : _callback_list.items()) {
+            entries_amaunt++;
+        }
+        if (entries_amaunt == 1) {
+            registerModule();
+            loadData();
+        }
     }
     virtual void onRemoveCallback(uint64_t ctrl_pointer) {
-//        saveData();
-//        _callback_list.erase(ctrl_pointer);
+
+        //fix it: определить число полей у объекта
+        int64_t entries_amaunt = 0;
+        for (auto&& el : _callback_list.items()) {
+            entries_amaunt++;
+        }
+        if (entries_amaunt == 1) {
+            saveData();
+        }
+
+        _callback_list.erase(ctrl_pointer);
     }
     virtual void onAction(const std::string action, const nlohmann::json input_object_array2d) {
         UNUSED(action) UNUSED(input_object_array2d)
@@ -160,17 +147,10 @@ protected:
 
     /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
     void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
-//        std::cout << __FUNCTION__ << std::endl;
-//        std::cout << "_objects_uid: " << _objects_uid << std::endl;
-//        std::cout << "_objects_uid: " << uint64_t(_objects_uid[obj_name.c_str()]) << std::endl;
-
-
         if (WcpModuleUtils::ckeckJsonField(jsobj_value, "rect", JsDataType::object)) {
             jsobj_value["root_image"] = parent["data"]["root_image"];
             jsobj_value["parent_image"] = parent["data"]["pointer"];
         }
-
-
 
         flag = false;
 
@@ -182,14 +162,7 @@ protected:
                     , parent["ctrl_ptr"]
                     , jsobj_value);
 
-//        std::cout << "object: " << object << std::endl;
         commitObject(object);
-//         std::cout << "stashObject pre\n";
-//         std::cout << "_objects_uid: " << _objects_uid << std::endl;
-//         std::cout << "obj_name.c_str(): " << obj_name.c_str() << std::endl;
-//        _objects_uid[obj_name.c_str()] = uint64_t(_objects_uid[obj_name.c_str()]) + 1;
-
-        std::cout << "stashObject finised\n";
     }
 //    /* Метод вызывается внутри реализации onProcess при каждом успешном получении результатов */
 //    void stashObject(const nlohmann::json& parent, std::string obj_name, nlohmann::json jsobj_value) {
